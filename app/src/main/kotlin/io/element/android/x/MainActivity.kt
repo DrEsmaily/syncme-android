@@ -156,13 +156,6 @@ class MainActivity : NodeActivity() {
         }
     }
 
-    /**
-     * Called when:
-     * - the launcher icon is clicked (if the app is already running);
-     * - a notification is clicked.
-     * - a deep link have been clicked
-     * - the app is going to background (<- this is strange)
-     */
     override fun onStart() {
         super.onStart()
         io.element.android.libraries.matrix.api.user.SyncMeAppVisibility.setForeground(true)
@@ -173,6 +166,13 @@ class MainActivity : NodeActivity() {
         super.onStop()
     }
 
+    /**
+     * Called when:
+     * - the launcher icon is clicked (if the app is already running);
+     * - a notification is clicked.
+     * - a deep link have been clicked
+     * - the app is going to background (<- this is strange)
+     */
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         Timber.tag(loggerTag.value).d("onNewIntent")
