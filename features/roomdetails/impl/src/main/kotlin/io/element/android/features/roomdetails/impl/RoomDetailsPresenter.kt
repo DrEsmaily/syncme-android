@@ -65,6 +65,7 @@ import io.element.android.libraries.push.api.notifications.NotificationCleaner
 import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.services.analytics.api.AnalyticsService
 import io.element.android.services.analyticsproviders.api.trackers.captureInteraction
+import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
@@ -129,7 +130,7 @@ class RoomDetailsPresenter(
             if (roomInfo.joinedMembersCount <= 128) room.updateMembers()
         }
         val joinedUsers = membersState.joinedRoomMembers().map { it.userId }.toSet()
-        val presenceStates = client.observePresence(joinedUsers)
+        val presenceStates = client.observePresence(joinedUsers.toImmutableSet())
         val permissions by getPermissions()
         val canonicalAlias by remember { derivedStateOf { roomInfo.canonicalAlias } }
         val isEncrypted by remember { derivedStateOf { roomInfo.isEncrypted == true } }

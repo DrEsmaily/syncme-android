@@ -89,7 +89,7 @@ class UserProfilePresenter(
     override fun present(): UserProfileState {
         val coroutineScope = rememberCoroutineScope()
         val isCurrentUser = remember { client.isMe(userId) }
-        val presence = client.observePresence(setOf(userId))[userId] ?: UserPresence.Unknown
+        val presence = client.observePresence(kotlinx.collections.immutable.persistentSetOf(userId))[userId] ?: UserPresence.Unknown
         var confirmationDialog by remember { mutableStateOf<ConfirmationDialog?>(null) }
         val startDmActionState: MutableState<AsyncAction<RoomId>> = remember { mutableStateOf(AsyncAction.Uninitialized) }
         val isBlocked: MutableState<AsyncData<Boolean>> = remember { mutableStateOf(AsyncData.Uninitialized) }

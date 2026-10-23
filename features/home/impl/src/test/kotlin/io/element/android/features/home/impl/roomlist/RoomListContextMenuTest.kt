@@ -137,7 +137,7 @@ class RoomListContextMenuTest : RobolectricTest() {
         setSafeContent {
             RoomListContextMenu(
                 contextMenu = contextMenu,
-                customTags = emptyList(),
+                customTags = kotlinx.collections.immutable.persistentListOf(),
                 canReportRoom = canReportRoom,
                 onRoomSettingsClick = onRoomSettingsClick,
                 onReportRoomClick = onReportRoomClick,
