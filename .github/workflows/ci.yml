@@ -28,9 +28,13 @@ jobs:
     env:
       GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=768m -Dfile.encoding=UTF-8
     steps:
+      - name: Select unit-test LFS fixtures
+        if: matrix.check == 'unit-tests'
+        run: git config --global lfs.fetchinclude 'libraries/mediaupload/impl/src/test/assets/*'
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+          lfs: ${{ matrix.check == 'unit-tests' }}
       - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6
         with:
           distribution: temurin
@@ -39,7 +43,7 @@ jobs:
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
       - name: Run checks
-        run: ./gradlew ${{ matrix.tasks }} --no-configuration-cache --stacktrace --max-workers=2 --no-parallel
+        run: ./gradlew ${{ matrix.tasks }} --no-configuration-cache --stacktrace --max-workers=2 --no-parallel --continue
       - name: Upload reports
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
