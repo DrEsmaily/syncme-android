@@ -10,7 +10,6 @@ package io.element.android.features.preferences.impl.root
 
 import com.google.common.truth.Truth.assertThat
 import io.element.android.libraries.matrix.test.core.aBuildMeta
-import io.element.android.services.toolbox.test.strings.FakeStringProvider
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
@@ -18,14 +17,13 @@ class VersionFormatterTest {
     @Test
     fun `version formatter should return formatted version`() = runTest {
         val sut = DefaultVersionFormatter(
-            stringProvider = FakeStringProvider(defaultResult = VERSION),
             buildMeta = aBuildMeta(
                 gitBranchName = "main",
                 versionName = "versionName",
                 versionCode = 123
             )
         )
-        assertThat(sut.get()).isEqualTo("${VERSION}versionName, 123")
+        assertThat(sut.get()).isEqualTo("SyncMe by 0x07c4 • Build versionName")
     }
 
     companion object {

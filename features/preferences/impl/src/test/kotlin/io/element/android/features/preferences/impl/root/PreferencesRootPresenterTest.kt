@@ -16,7 +16,6 @@ import io.element.android.compound.theme.Theme
 import io.element.android.features.preferences.impl.account.aPreferencesAccountState
 import io.element.android.features.preferences.impl.userstatus.aUserStatusState
 import io.element.android.features.preferences.impl.utils.ShowDeveloperSettingsProvider
-import io.element.android.libraries.core.meta.BuildType
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarDispatcher
 import io.element.android.libraries.featureflag.api.FeatureFlagService
 import io.element.android.libraries.featureflag.api.FeatureFlags
@@ -28,7 +27,6 @@ import io.element.android.libraries.matrix.test.A_SESSION_ID
 import io.element.android.libraries.matrix.test.A_SESSION_ID_2
 import io.element.android.libraries.matrix.test.A_USER_NAME
 import io.element.android.libraries.matrix.test.FakeMatrixClient
-import io.element.android.libraries.matrix.test.core.aBuildMeta
 import io.element.android.libraries.preferences.api.store.AppPreferencesStore
 import io.element.android.libraries.preferences.test.InMemoryAppPreferencesStore
 import io.element.android.libraries.sessionstorage.api.SessionStore
@@ -41,9 +39,11 @@ import io.element.android.tests.testutils.lambda.lambdaRecorder
 import io.element.android.tests.testutils.lambda.value
 import io.element.android.tests.testutils.test
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
@@ -55,7 +55,10 @@ class PreferencesRootPresenterTest {
     @Test
     fun `present - initial state`() = runTest {
         val matrixClient = FakeMatrixClient()
-        createPreferencesRootPresenter(matrixClient = matrixClient).test {
+        createPreferencesRootPresenter(
+            matrixClient = matrixClient,
+            featureFlagService = FakeFeatureFlagService(initialState = mapOf(FeatureFlags.AllowBlackTheme.key to false)),
+        ).test {
             val initialState = awaitItem()
             assertThat(initialState.myUser).isEqualTo(
                 MatrixUser(
@@ -76,7 +79,7 @@ class PreferencesRootPresenterTest {
             )
             assertThat(loadedState.userStatusState).isNotNull()
             assertThat(loadedState.showAnalyticsSettings).isFalse()
-            assertThat(loadedState.showDeveloperSettings).isTrue()
+            assertThat(loadedState.showDeveloperSettings).isFalse()
             assertThat(loadedState.showLabsItem).isFalse()
             assertThat(loadedState.snackbarMessage).isNull()
         }
@@ -145,7 +148,7 @@ class PreferencesRootPresenterTest {
     @Test
     fun `present - developer settings is hidden by default in release builds`() = runTest {
         createPreferencesRootPresenter(
-            showDeveloperSettingsProvider = ShowDeveloperSettingsProvider(aBuildMeta(BuildType.RELEASE))
+            showDeveloperSettingsProvider = ShowDeveloperSettingsProvider()
         ).test {
             val loadedState = awaitFirstItem()
             assertThat(loadedState.showDeveloperSettings).isFalse()
@@ -155,7 +158,7 @@ class PreferencesRootPresenterTest {
     @Test
     fun `present - developer settings can be enabled in release builds`() = runTest {
         createPreferencesRootPresenter(
-            showDeveloperSettingsProvider = ShowDeveloperSettingsProvider(aBuildMeta(BuildType.RELEASE))
+            showDeveloperSettingsProvider = ShowDeveloperSettingsProvider()
         ).test {
             val loadedState = awaitFirstItem()
             repeat(times = ShowDeveloperSettingsProvider.DEVELOPER_SETTINGS_COUNTER) {
@@ -264,6 +267,37 @@ class PreferencesRootPresenterTest {
     }
 
     @Test
+    fun `present - accounts wait for their saved layout before becoming visible`() = runTest {
+        val savedLayout = CompletableDeferred<Boolean>()
+        val preferences = object : AppPreferencesStore by InMemoryAppPreferencesStore() {
+            override fun isOtherAccountsExpandedFlow() = flow { emit(savedLayout.await()) }
+        }
+        createPreferencesRootPresenter(
+            appPreferencesStore = preferences,
+            featureFlagService = FakeFeatureFlagService(initialState = mapOf(FeatureFlags.MultiAccount.key to true)),
+            sessionStore = InMemorySessionStore(
+                initialList = listOf(
+                    aSessionData(sessionId = A_SESSION_ID.value),
+                    aSessionData(sessionId = A_SESSION_ID_2.value),
+                ),
+            ),
+        ).test {
+            val loadingStates = consumeItemsUntilPredicate { it.userStatusState != null }
+            loadingStates.forEach {
+                assertThat(it.isMultiAccountEnabled).isFalse()
+                assertThat(it.otherSessions).isEmpty()
+            }
+            savedLayout.complete(false)
+            val loadedStates = consumeItemsUntilPredicate { it.otherSessions.isNotEmpty() }
+            loadedStates.filter { it.otherSessions.isNotEmpty() }.forEach {
+                assertThat(it.isMultiAccountEnabled).isTrue()
+                assertThat(it.isOtherAccountsSectionExpanded).isFalse()
+            }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun `present - toggle other accounts expanded stores the new value`() = runTest {
         val appPreferencesStore = InMemoryAppPreferencesStore()
         createPreferencesRootPresenter(appPreferencesStore = appPreferencesStore).test {
@@ -287,7 +321,7 @@ class PreferencesRootPresenterTest {
 
     private fun CoroutineScope.createPreferencesRootPresenter(
         matrixClient: FakeMatrixClient = FakeMatrixClient(),
-        showDeveloperSettingsProvider: ShowDeveloperSettingsProvider = ShowDeveloperSettingsProvider(aBuildMeta(BuildType.DEBUG)),
+        showDeveloperSettingsProvider: ShowDeveloperSettingsProvider = ShowDeveloperSettingsProvider(),
         featureFlagService: FeatureFlagService = FakeFeatureFlagService(),
         sessionStore: SessionStore = InMemorySessionStore(),
         appPreferencesStore: AppPreferencesStore = InMemoryAppPreferencesStore(),

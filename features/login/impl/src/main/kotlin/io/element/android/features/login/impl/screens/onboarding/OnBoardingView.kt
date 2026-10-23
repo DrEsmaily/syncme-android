@@ -9,7 +9,6 @@
 package io.element.android.features.login.impl.screens.onboarding
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -23,11 +22,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Alignment.Companion.CenterHorizontally
-import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
@@ -37,8 +34,6 @@ import io.element.android.features.login.impl.R
 import io.element.android.features.login.impl.login.LoginModeEvent
 import io.element.android.features.login.impl.login.LoginModeView
 import io.element.android.libraries.architecture.AsyncData
-import io.element.android.libraries.designsystem.atomic.atoms.ElementLogoAtom
-import io.element.android.libraries.designsystem.atomic.atoms.ElementLogoAtomSize
 import io.element.android.libraries.designsystem.atomic.molecules.ButtonColumnMolecule
 import io.element.android.libraries.designsystem.atomic.pages.FlowStepPage
 import io.element.android.libraries.designsystem.atomic.pages.OnBoardingPage
@@ -48,9 +43,7 @@ import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.Button
 import io.element.android.libraries.designsystem.theme.components.Icon
 import io.element.android.libraries.designsystem.theme.components.IconButton
-import io.element.android.libraries.designsystem.theme.components.IconSource
 import io.element.android.libraries.designsystem.theme.components.Text
-import io.element.android.libraries.designsystem.theme.components.TextButton
 import io.element.android.libraries.matrix.api.auth.OAuthDetails
 import io.element.android.libraries.permissions.api.localnetwork.LocalNetworkPermissionDialogView
 import io.element.android.libraries.testtags.TestTags
@@ -65,13 +58,13 @@ fun OnBoardingView(
     state: OnBoardingState,
     onBackClick: () -> Unit,
     onDeveloperSettingsClick: () -> Unit,
-    onSignInWithQrCode: () -> Unit,
+    @Suppress("UNUSED_PARAMETER") onSignInWithQrCode: () -> Unit,
     onSignIn: (mustChooseAccountProvider: Boolean) -> Unit,
-    onCreateAccount: () -> Unit,
+    @Suppress("UNUSED_PARAMETER") onCreateAccount: () -> Unit,
     onOAuthDetails: (OAuthDetails) -> Unit,
     onNeedLoginPassword: () -> Unit,
     onLearnMoreClick: () -> Unit,
-    onReportProblem: () -> Unit,
+    @Suppress("UNUSED_PARAMETER") onReportProblem: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val loginView = @Composable {
@@ -134,18 +127,12 @@ private fun AddFirstAccountScaffold(
 ) {
     OnBoardingPage(
         modifier = modifier,
-        renderBackground = state.onBoardingLogoResId == null,
+        renderBackground = true,
         content = {
             Box(
                 modifier = Modifier.fillMaxSize(),
             ) {
-                if (state.onBoardingLogoResId != null) {
-                    OnBoardingLogo(
-                        onBoardingLogoResId = state.onBoardingLogoResId,
-                    )
-                } else {
-                    OnBoardingContent(state = state)
-                }
+                OnBoardingContent()
                 if (state.showDeveloperSettings) {
                     IconButton(
                         onClick = onDeveloperSettingsClick,
@@ -198,77 +185,55 @@ private fun AddOtherAccountScaffold(
 }
 
 @Composable
-private fun OnBoardingContent(state: OnBoardingState) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-    ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = BiasAlignment(
-                horizontalBias = 0f,
-                verticalBias = -0.4f
-            )
+private fun OnBoardingContent() {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp),
+            horizontalAlignment = CenterHorizontally,
         ) {
-            ElementLogoAtom(
-                size = ElementLogoAtomSize.Large,
-                modifier = Modifier.padding(top = ElementLogoAtomSize.Large.shadowRadius / 2)
+            // Use the full-resolution SyncMe artwork bundled as drawable-nodpi.
+            // The launcher icon supplied by PackageManager may be a density-scaled
+            // adaptive-icon raster and visibly blurry when enlarged.
+            Image(
+                painter = painterResource(id = R.drawable.syncme_welcome_mark),
+                contentDescription = "SyncMe",
+                modifier = Modifier.height(132.dp).fillMaxWidth(),
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Text(
+                text = "SyncMe",
+                color = ElementTheme.colors.textPrimary,
+                style = ElementTheme.typography.fontHeadingLgBold,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+            Text(
+                text = stringResource(R.string.screen_onboarding_syncme_privacy),
+                color = ElementTheme.colors.textPrimary,
+                style = ElementTheme.typography.fontBodyMdRegular,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = stringResource(R.string.screen_onboarding_syncme_tagline),
+                color = ElementTheme.colors.textSecondary,
+                style = ElementTheme.typography.fontBodyMdRegular,
+                textAlign = TextAlign.Center,
             )
         }
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = BiasAlignment(
-                horizontalBias = 0f,
-                verticalBias = 0.6f
-            )
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                horizontalAlignment = CenterHorizontally,
-            ) {
-                Text(
-                    text = stringResource(id = R.string.screen_onboarding_welcome_title),
-                    color = ElementTheme.colors.textPrimary,
-                    style = ElementTheme.typography.fontHeadingLgBold,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = stringResource(id = R.string.screen_onboarding_welcome_message, state.productionApplicationName),
-                    color = ElementTheme.colors.textPrimary,
-                    style = ElementTheme.typography.fontBodyLgRegular,
-                    textAlign = TextAlign.Center,
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun OnBoardingLogo(
-    onBoardingLogoResId: Int,
-    modifier: Modifier = Modifier,
-) {
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Image(
-            painter = painterResource(id = onBoardingLogoResId),
-            contentDescription = null
-        )
     }
 }
 
 @Composable
 private fun OnBoardingButtons(
     state: OnBoardingState,
-    onSignInWithQrCode: () -> Unit,
+    @Suppress("UNUSED_PARAMETER") onSignInWithQrCode: () -> Unit,
     onSignIn: (mustChooseAccountProvider: Boolean) -> Unit,
-    onCreateAccount: () -> Unit,
-    onReportProblem: () -> Unit,
+    @Suppress("UNUSED_PARAMETER") onCreateAccount: () -> Unit,
+    @Suppress("UNUSED_PARAMETER") onReportProblem: () -> Unit,
 ) {
     val isLoading by remember(state.loginModeState.loginMode) {
         derivedStateOf {
@@ -277,74 +242,28 @@ private fun OnBoardingButtons(
     }
 
     ButtonColumnMolecule {
-        val signInButtonStringRes = if (state.canLoginWithQrCode || state.canCreateAccount) {
-            R.string.screen_onboarding_sign_in_manually
-        } else {
-            CommonStrings.action_continue
-        }
-        if (state.canLoginWithQrCode) {
-            Button(
-                text = stringResource(id = R.string.screen_onboarding_sign_in_with_qr_code),
-                leadingIcon = IconSource.Vector(CompoundIcons.QrCode()),
-                onClick = onSignInWithQrCode,
-                modifier = Modifier.fillMaxWidth()
-            )
-        }
         val defaultAccountProvider = state.defaultAccountProvider
-        if (defaultAccountProvider == null) {
-            Button(
-                text = stringResource(id = signInButtonStringRes),
-                onClick = {
-                    onSignIn(state.mustChooseAccountProvider)
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .testTag(TestTags.onBoardingSignIn)
-            )
-        } else {
-            Button(
-                text = stringResource(id = R.string.screen_onboarding_sign_in_to, defaultAccountProvider.friendlyServerName()),
-                showProgress = isLoading,
-                onClick = {
+        Button(
+            text = stringResource(R.string.screen_onboarding_syncme_login),
+            showProgress = isLoading,
+            onClick = {
+                if (defaultAccountProvider != null) {
                     state.eventSink(OnBoardingEvent.OnSignIn(defaultAccountProvider))
-                },
-                enabled = state.submitEnabled || isLoading,
-                modifier = Modifier
-                    .fillMaxWidth()
-            )
-        }
-        if (state.canCreateAccount) {
-            TextButton(
-                text = stringResource(id = R.string.screen_onboarding_sign_up),
-                onClick = onCreateAccount,
-                modifier = Modifier
-                    .fillMaxWidth()
-            )
-        }
-        if (state.isAddingAccount.not()) {
-            if (state.canReportBug) {
-                // Add a report problem text button. Use a Text since we need a special theme here.
-                Text(
-                    modifier = Modifier
-                        .clickable(onClick = onReportProblem)
-                        .padding(16.dp),
-                    text = stringResource(id = CommonStrings.common_report_a_problem),
-                    style = ElementTheme.typography.fontBodySmRegular,
-                    color = ElementTheme.colors.textSecondary,
-                )
-            } else {
-                Text(
-                    modifier = Modifier
-                        .clickable(role = Role.Button) {
-                            state.eventSink(OnBoardingEvent.OnVersionClick)
-                        }
-                        .padding(16.dp),
-                    text = stringResource(id = R.string.screen_onboarding_app_version, state.version),
-                    style = ElementTheme.typography.fontBodySmRegular,
-                    color = ElementTheme.colors.textSecondary,
-                )
-            }
-        }
+                } else {
+                    onSignIn(state.mustChooseAccountProvider)
+                }
+            },
+            enabled = defaultAccountProvider == null || state.submitEnabled || isLoading,
+            modifier = Modifier.fillMaxWidth().testTag(TestTags.onBoardingSignIn),
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            text = stringResource(R.string.screen_onboarding_syncme_credit),
+            color = ElementTheme.colors.textSecondary,
+            style = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp),
+        )
     }
 }
 

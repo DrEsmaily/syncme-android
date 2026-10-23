@@ -36,7 +36,6 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
-import io.element.android.features.preferences.impl.R
 import io.element.android.features.preferences.impl.account.PreferencesAccountView
 import io.element.android.features.preferences.impl.user.UserPreferences
 import io.element.android.features.preferences.impl.userstatus.UserStatusState
@@ -59,6 +58,8 @@ import io.element.android.libraries.designsystem.theme.components.HorizontalDivi
 import io.element.android.libraries.designsystem.theme.components.Icon
 import io.element.android.libraries.designsystem.theme.components.IconSource
 import io.element.android.libraries.designsystem.theme.components.ListItem
+import io.element.android.libraries.designsystem.theme.components.ListItemStyle
+import io.element.android.libraries.designsystem.theme.components.ListSectionHeader
 import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.designsystem.utils.CommonDrawables
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarHost
@@ -79,13 +80,13 @@ fun PreferencesRootView(
     emojiPickerRenderer: EmojiPickerRenderer,
     onBackClick: () -> Unit,
     onAddAccountClick: () -> Unit,
-    onOpenAnalytics: () -> Unit,
+    @Suppress("UNUSED_PARAMETER") onOpenAnalytics: () -> Unit,
     onOpenLockScreenSettings: () -> Unit,
-    onOpenAbout: () -> Unit,
+    @Suppress("UNUSED_PARAMETER") onOpenAbout: () -> Unit,
     onOpenDeveloperSettings: () -> Unit,
-    onOpenMediaSettings: () -> Unit,
+    @Suppress("UNUSED_PARAMETER") onOpenMediaSettings: () -> Unit,
     onOpenLocationSettings: () -> Unit,
-    onOpenLabs: () -> Unit,
+    @Suppress("UNUSED_PARAMETER") onOpenLabs: () -> Unit,
     onEditProfileClick: (MatrixUser) -> Unit,
     onSecureBackupClick: () -> Unit,
     onManageAccountClick: (url: String) -> Unit,
@@ -126,10 +127,7 @@ fun PreferencesRootView(
                     onAddAccountClick = onAddAccountClick,
                 )
             }
-            HorizontalDivider(
-                thickness = 8.dp,
-                color = ElementTheme.colors.bgSubtleSecondary,
-            )
+            HorizontalDivider()
             // Account settings section
             PreferencesAccountView(
                 state = state.preferencesAccountState,
@@ -148,6 +146,11 @@ fun PreferencesRootView(
                 onOpenLockScreenSettings = onOpenLockScreenSettings,
                 onOpenMediaSettings = onOpenMediaSettings,
                 onOpenLocationSettings = onOpenLocationSettings,
+            )
+            DestructiveAccountSection(
+                canDeactivateAccount = state.preferencesAccountState.canDeactivateAccount,
+                onSignOutClick = onSignOutClick,
+                onDeactivateClick = onDeactivateClick,
             )
             // General section
             GeneralSection(
@@ -209,68 +212,63 @@ private fun ColumnScope.MultiAccountSection(
     state: PreferencesRootState,
     onAddAccountClick: () -> Unit,
 ) {
-    HorizontalDivider(
-        thickness = 8.dp,
-        color = ElementTheme.colors.bgSubtleSecondary,
-    )
     if (state.otherSessions.isEmpty()) {
-        AddAccountItem(onAddAccountClick)
+        HorizontalDivider()
+        if (state.otherSessions.size + 1 < 3) AddAccountItem(onAddAccountClick)
     } else {
         val expandedStateDescription = if (state.isOtherAccountsSectionExpanded) {
             stringResource(CommonStrings.a11y_state_expanded)
         } else {
             stringResource(CommonStrings.a11y_state_collapsed)
         }
-        ListItem(
-            modifier = Modifier.semantics {
-                stateDescription = expandedStateDescription
-            },
-            content = { Text(stringResource(CommonStrings.common_switch_account)) },
-            onClick = { state.eventSink(PreferencesRootEvent.ToggleOtherAccountsExpanded) },
-            trailingContent = ListItemContent.Custom { _ ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { stateDescription = expandedStateDescription }
+                .clickable { state.eventSink(PreferencesRootEvent.ToggleOtherAccountsExpanded) },
+        ) {
+            ListSectionHeader(
+                title = stringResource(CommonStrings.common_switch_account),
+                hasDivider = true,
+            )
+            Row(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    // Center on header text; header reserves space above its top divider.
+                    .padding(end = 16.dp, top = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                AnimatedVisibility(
+                    visible = !state.isOtherAccountsSectionExpanded,
+                    enter = fadeIn(),
+                    exit = fadeOut(),
                 ) {
-                    AnimatedVisibility(
-                        visible = !state.isOtherAccountsSectionExpanded,
-                        enter = fadeIn(),
-                        exit = fadeOut(),
-                    ) {
-                        AvatarRow(
-                            avatarDataList = state.otherSessions
-                                .take(3)
-                                .map { it.getAvatarData(AvatarSize.OtherAccountItem) }
-                                .toImmutableList(),
-                            avatarType = AvatarType.User,
-                            lastOnTop = true,
-                        )
-                    }
-                    // Animate the chevron icon to rotate when the section is expanded/collapsed
-                    val rotation: Float by animateFloatAsState(
-                        targetValue = if (state.isOtherAccountsSectionExpanded) -180f else 0f,
-                        animationSpec = tween(
-                            delayMillis = 0,
-                            durationMillis = 300,
-                        ),
-                        label = "chevron"
-                    )
-                    Icon(
-                        modifier = Modifier.rotate(rotation),
-                        imageVector = CompoundIcons.ChevronDown(),
-                        contentDescription = null,
+                    AvatarRow(
+                        avatarDataList = state.otherSessions
+                            .take(3)
+                            .map { it.getAvatarData(AvatarSize.OtherAccountItem) }
+                            .toImmutableList(),
+                        avatarType = AvatarType.User,
+                        lastOnTop = true,
                     )
                 }
-            },
-        )
+                val rotation: Float by animateFloatAsState(
+                    targetValue = if (state.isOtherAccountsSectionExpanded) -180f else 0f,
+                    animationSpec = tween(delayMillis = 0, durationMillis = 300),
+                    label = "chevron",
+                )
+                Icon(
+                    modifier = Modifier.rotate(rotation),
+                    imageVector = CompoundIcons.ChevronDown(),
+                    contentDescription = null,
+                )
+            }
+        }
         AnimatedVisibility(
             visible = state.isOtherAccountsSectionExpanded,
         ) {
             Column {
-                HorizontalDivider(
-                    thickness = 1.dp,
-                    color = ElementTheme.colors.bgSubtleSecondary,
-                )
                 state.otherSessions.forEach { matrixUser ->
                     MatrixUserRow(
                         modifier = Modifier
@@ -283,7 +281,7 @@ private fun ColumnScope.MultiAccountSection(
                         verticalSpaceWidth = 16.dp,
                     )
                 }
-                AddAccountItem(onAddAccountClick)
+                if (state.otherSessions.size + 1 < 3) AddAccountItem(onAddAccountClick)
             }
         }
     }
@@ -305,7 +303,7 @@ private fun AppSettingsSection(
     state: PreferencesRootState,
     onOpenLockScreenSettings: () -> Unit,
     onOpenLocationSettings: () -> Unit,
-    onOpenMediaSettings: () -> Unit,
+    @Suppress("UNUSED_PARAMETER") onOpenMediaSettings: () -> Unit,
 ) {
     PreferenceCategory(
         title = stringResource(CommonStrings.common_app_settings),
@@ -320,12 +318,7 @@ private fun AppSettingsSection(
                 state.eventSink(PreferencesRootEvent.SetTheme(themeOption))
             }
         )
-        ListItem(
-            content = { Text(stringResource(id = CommonStrings.common_media_upload_quality)) },
-            leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Image())),
-            onClick = onOpenMediaSettings,
-        )
-        ListItem(
+ListItem(
             content = { Text(stringResource(id = CommonStrings.common_screen_lock)) },
             leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Lock())),
             onClick = onOpenLockScreenSettings,
@@ -339,37 +332,41 @@ private fun AppSettingsSection(
 }
 
 @Composable
-private fun ColumnScope.GeneralSection(
-    state: PreferencesRootState,
-    onOpenAbout: () -> Unit,
-    onOpenAnalytics: () -> Unit,
-    onOpenLabs: () -> Unit,
-    onOpenDeveloperSettings: () -> Unit,
+private fun ColumnScope.DestructiveAccountSection(
+    canDeactivateAccount: Boolean,
+    onSignOutClick: () -> Unit,
+    onDeactivateClick: () -> Unit,
 ) {
     HorizontalDivider(
         thickness = 1.dp,
         color = ElementTheme.colors.bgSubtleSecondary,
     )
-    if (state.showAnalyticsSettings) {
-        ListItem(
-            content = { Text(stringResource(id = CommonStrings.common_analytics)) },
-            leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Chart())),
-            onClick = onOpenAnalytics,
-        )
-    }
-    if (state.showLabsItem) {
-        ListItem(
-            content = { Text(stringResource(id = R.string.screen_labs_title)) },
-            leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Labs())),
-            onClick = onOpenLabs,
-        )
-    }
     ListItem(
-        content = { Text(stringResource(id = CommonStrings.common_about)) },
-        leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Info())),
-        onClick = onOpenAbout,
+        content = { Text(stringResource(id = CommonStrings.action_signout)) },
+        leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Close())),
+        style = ListItemStyle.Destructive,
+        onClick = onSignOutClick,
     )
-    // Put developer settings at the end, so nothing bad happens if the user clicks 8 times to enable the entry
+    if (canDeactivateAccount) {
+        ListItem(
+            content = { Text(stringResource(id = CommonStrings.action_delete_account)) },
+            leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Delete())),
+            style = ListItemStyle.Destructive,
+            onClick = onDeactivateClick,
+        )
+    }
+}
+
+@Composable
+private fun ColumnScope.GeneralSection(
+    state: PreferencesRootState,
+    @Suppress("UNUSED_PARAMETER") onOpenAbout: () -> Unit,
+    @Suppress("UNUSED_PARAMETER") onOpenAnalytics: () -> Unit,
+    @Suppress("UNUSED_PARAMETER") onOpenLabs: () -> Unit,
+    onOpenDeveloperSettings: () -> Unit,
+) {
+    // About is hidden from the settings menu.
+    // SyncMe developer options appear only after five taps on the version.
     AnimatedVisibility(
         visible = state.showDeveloperSettings,
     ) {

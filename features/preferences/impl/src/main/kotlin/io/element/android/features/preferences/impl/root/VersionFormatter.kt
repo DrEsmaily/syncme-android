@@ -11,8 +11,6 @@ package io.element.android.features.preferences.impl.root
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import io.element.android.libraries.core.meta.BuildMeta
-import io.element.android.libraries.ui.strings.CommonStrings
-import io.element.android.services.toolbox.api.strings.StringProvider
 
 interface VersionFormatter {
     fun get(): String
@@ -20,14 +18,9 @@ interface VersionFormatter {
 
 @ContributesBinding(AppScope::class)
 class DefaultVersionFormatter(
-    private val stringProvider: StringProvider,
     private val buildMeta: BuildMeta,
 ) : VersionFormatter {
     override fun get(): String {
-        return stringProvider.getString(
-            CommonStrings.settings_version_number,
-            buildMeta.versionName,
-            buildMeta.versionCode.toString()
-        )
+        return "SyncMe by 0x07c4 • Build ${buildMeta.versionName}"
     }
 }

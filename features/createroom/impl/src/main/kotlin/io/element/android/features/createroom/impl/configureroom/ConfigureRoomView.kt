@@ -122,13 +122,7 @@ fun ConfigureRoomView(
                 onTopicChange = { state.eventSink(ConfigureRoomEvent.TopicChanged(it)) },
             )
             Spacer(modifier = Modifier.height(16.dp))
-            if (!state.isSpace && state.spaces.isNotEmpty()) {
-                SelectParentSpaceOptions(
-                    spaces = state.spaces,
-                    selectedSpace = state.config.parentSpace,
-                    onSelectSpace = { state.eventSink(ConfigureRoomEvent.SetParentSpace(it)) },
-                )
-            }
+            // SyncMe UI does not expose Matrix Spaces.
             RoomJoinRuleOptions(
                 options = state.availableJoinRules,
                 selected = state.config.visibilityState.joinRuleItem,
@@ -293,7 +287,7 @@ private fun RoomJoinRuleOptions(
         title = stringResource(R.string.screen_create_room_room_access_section_title),
         modifier = modifier,
     ) {
-        options.forEach { item ->
+        options.filterNot { it is JoinRuleItem.PrivateVisibility.Restricted || it is JoinRuleItem.PrivateVisibility.AskToJoinRestricted }.forEach { item ->
             val isSelected = item == selected
             ListItem(
                 leadingContent = ListItemContent.Custom {
