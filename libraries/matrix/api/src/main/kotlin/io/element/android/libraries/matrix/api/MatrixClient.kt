@@ -92,9 +92,9 @@ interface MatrixClient : ClientUrlContentFetcher {
         get() = kotlinx.coroutines.flow.MutableStateFlow(emptyMap())
 
     /** Register visible users; matching registrations must be released when the view is disposed. */
-    fun trackPresence(userIds: Set<UserId>) = Unit
+    fun trackPresence(userIds: Set<UserId>) {}
 
-    fun releasePresence(userIds: Set<UserId>) = Unit
+    fun releasePresence(userIds: Set<UserId>) {}
 
     /** Handles verifying this session against the user's other devices or their recovery key. */
     val sessionVerificationService: SessionVerificationService
