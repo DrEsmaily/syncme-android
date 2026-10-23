@@ -55,6 +55,7 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -71,7 +72,7 @@ class AttachmentsPreviewPresenter(
     private val temporaryUriDeleter: TemporaryUriDeleter,
     private val attachmentImageEditor: AttachmentImageEditor,
     private val mediaOptimizationSelectorPresenterFactory: MediaOptimizationSelectorPresenter.Factory,
-    private val videoCompressionPresetSelector: VideoCompressionPresetSelector,
+    @Suppress("UNUSED_PARAMETER") videoCompressionPresetSelector: VideoCompressionPresetSelector,
     @SessionCoroutineScope private val sessionCoroutineScope: CoroutineScope,
     private val dispatchers: CoroutineDispatchers,
     private val mediaOptimizationConfigProvider: MediaOptimizationConfigProvider,
@@ -230,14 +231,21 @@ class AttachmentsPreviewPresenter(
                 is AttachmentsPreviewEvent.SendAttachment -> {
                     ongoingSendAttachmentJob.value = coroutineScope.launch {
                         if (preprocessMediaJob?.isActive != true && sendActionState.value !is SendActionState.Sending.ReadyToUpload) {
-                            val configs = mediaOptimizationSelectorStates.map {
+                            val configs = mediaOptimizationSelectorStates.mapIndexed { index, selectorState ->
+                                val attachment = editedAttachments[index] as Attachment.Media
+                                val isVideo = attachment.localMedia.info.mimeType.isMimeTypeVideo()
                                 MediaOptimizationConfig(
-                                    compressImages = it.isImageOptimizationEnabled
+                                    compressImages = selectorState.isImageOptimizationEnabled
                                         ?: mediaOptimizationConfigProvider.get().compressImages,
-                                    videoCompressionPreset = it.selectedVideoPreset
-                                        ?: mediaOptimizationConfigProvider.get().videoCompressionPreset,
+                                    videoCompressionPreset = if (isVideo) {
+                                        VideoCompressionPreset.HIGH
+                                    } else {
+                                        selectorState.selectedVideoPreset
+                                            ?: mediaOptimizationConfigProvider.get().videoCompressionPreset
+                                    },
                                 )
                             }
+
                             preprocessMediaJob = coroutineScope.launch(dispatchers.io) {
                                 preProcessAttachments(
                                     attachments = editedAttachments,
@@ -298,7 +306,10 @@ class AttachmentsPreviewPresenter(
                     )
                 }
                 AttachmentsPreviewEvent.CancelAndClearSendState -> {
-                    // Cancel media sending
+                    // Cancel preparation immediately. Actual queued Matrix media sends are cancelled
+                    // from the timeline action via their transactionId, not only this UI coroutine.
+                    preprocessMediaJob?.cancel()
+                    preprocessMediaJob = null
                     ongoingSendAttachmentJob.value?.let {
                         it.cancel()
                         ongoingSendAttachmentJob.value = null
@@ -432,26 +443,21 @@ class AttachmentsPreviewPresenter(
         mediaAttachment: Attachment.Media,
         mediaOptimizationSelectorState: MediaOptimizationSelectorState,
     ): MediaOptimizationConfig {
-        return if (mediaAttachment.sendAsFile) {
-            // If we're sending the media as a file, we can skip image compression and we should select the highest video compression preset that still fits
-            // the upload limit (if the estimations are available)
-            val videoCompressionPreset = videoCompressionPresetSelector.selectBestVideoPreset(
-                expectedVideoPreset = VideoCompressionPreset.HIGH,
-                videoSizeEstimations = mediaOptimizationSelectorState.videoSizeEstimations,
-            ).dataOrNull() ?: VideoCompressionPreset.HIGH
-
-            MediaOptimizationConfig(
-                compressImages = false,
-                videoCompressionPreset = videoCompressionPreset,
-            )
-        } else {
-            MediaOptimizationConfig(
-                compressImages = mediaOptimizationSelectorState.isImageOptimizationEnabled
-                    ?: mediaOptimizationConfigProvider.get().compressImages,
-                videoCompressionPreset = mediaOptimizationSelectorState.selectedVideoPreset
-                    ?: mediaOptimizationConfigProvider.get().videoCompressionPreset,
-            )
-        }
+        val isVideo = mediaAttachment.localMedia.info.mimeType.isMimeTypeVideo()
+        return MediaOptimizationConfig(
+            compressImages = if (mediaAttachment.sendAsFile) {
+                false
+            } else {
+                mediaOptimizationSelectorState.isImageOptimizationEnabled
+                    ?: mediaOptimizationConfigProvider.get().compressImages
+            },
+            videoCompressionPreset = if (isVideo) {
+                VideoCompressionPreset.HIGH
+            } else {
+                mediaOptimizationSelectorState.selectedVideoPreset
+                    ?: mediaOptimizationConfigProvider.get().videoCompressionPreset
+            },
+        )
     }
 
     private suspend fun preProcessAttachments(

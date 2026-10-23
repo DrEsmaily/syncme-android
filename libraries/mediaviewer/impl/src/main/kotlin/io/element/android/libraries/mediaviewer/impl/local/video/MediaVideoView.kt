@@ -28,6 +28,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.stringResource
@@ -44,7 +45,6 @@ import androidx.media3.exoplayer.ExoPlaybackException
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
-import io.element.android.compound.theme.ElementTheme
 import io.element.android.libraries.audio.api.AudioFocus
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
@@ -213,13 +213,13 @@ private fun ExoPlayerMediaVideoView(
     KeepScreenOn(mediaPlayerControllerState.isPlaying)
     Box(
         modifier = modifier
-            .background(ElementTheme.colors.bgSubtlePrimary),
+            .background(Color.Black),
     ) {
         val context = LocalContext.current
         if (LocalInspectionMode.current) {
             Text(
                 modifier = Modifier
-                    .background(ElementTheme.colors.bgSubtlePrimary)
+                    .background(Color.Black)
                     .align(Alignment.Center),
                 text = "A Video Player will render here",
             )
@@ -247,6 +247,8 @@ private fun ExoPlayerMediaVideoView(
                         resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
                         layoutParams = FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
                         useController = false
+                        setBackgroundColor(android.graphics.Color.BLACK)
+                        setShutterBackgroundColor(android.graphics.Color.BLACK)
                         contentDescription = videoDescription
                     }
                 },

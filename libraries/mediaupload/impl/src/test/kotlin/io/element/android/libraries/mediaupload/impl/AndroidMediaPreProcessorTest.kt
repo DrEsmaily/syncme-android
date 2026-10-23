@@ -430,7 +430,6 @@ class AndroidMediaPreProcessorTest : RobolectricTest() {
         )
     }
 
-    @Ignore("Compressing video is not working with Robolectric")
     @Test
     fun `test processing video no compression`() = runTest {
         val mediaUploadInfo = process(

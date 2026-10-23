@@ -135,7 +135,9 @@ fun MediaViewerView(
     BackHandler { onBackClick() }
     Scaffold(
         modifier,
-        containerColor = Color.Transparent,
+        // SyncMe uses a true-black media canvas so letterboxing and video chrome
+        // stay OLED black instead of falling back to Material dark gray.
+        containerColor = Color.Black,
         topBar = {
             AnimatedVisibility(
                 visible = showOverlay,
@@ -174,7 +176,7 @@ fun MediaViewerView(
                                 }
                             },
                             colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = bgCanvasWithTransparency,
+                                containerColor = Color.Black,
                             ),
                             navigationIcon = { BackButton(onClick = onBackClick) },
                         )
@@ -592,7 +594,7 @@ private fun MediaViewerTopBar(
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = bgCanvasWithTransparency,
+            containerColor = Color.Black,
         ),
         navigationIcon = { BackButton(onClick = onBackClick) },
         actions = {
@@ -640,7 +642,7 @@ private fun MediaViewerBottomBar(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(bgCanvasWithTransparency)
+            .background(Color.Black)
             .onSizeChanged {
                 onHeightChange(it.height)
             },
