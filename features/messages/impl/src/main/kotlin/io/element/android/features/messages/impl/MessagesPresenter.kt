@@ -99,6 +99,7 @@ import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.services.analytics.api.AnalyticsService
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.onStart
@@ -232,7 +233,7 @@ class MessagesPresenter(
             if (roomInfo.joinedMembersCount <= 128) room.updateMembers()
         }
         val joinedUsers = membersState.joinedRoomMembers().map { it.userId }.toSet()
-        val presenceStates = matrixClient.observePresence(joinedUsers)
+        val presenceStates = matrixClient.observePresence(joinedUsers.toImmutableSet())
         val dmPresence = dmRoomMember?.userId?.let(presenceStates::get) ?: UserPresence.Unknown
         val onlineMemberCount = if (roomInfo.isDm) null else presenceStates.onlineMemberCount(joinedUsers, roomInfo.joinedMembersCount)
 
