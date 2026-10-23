@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 16862)
+Total output lines: 1240
+
 {
   "legacy_source": "345864b15f2b8b6ca41728a50a280bd5efa81f39",
   "legacy_source_branch": "build/syncme-259-scroll",
@@ -161,7 +164,7 @@
     {
       "path": "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/filters/RoomListFiltersView.kt",
       "legacy_blob": "286ea776b12afc238d9572fab2d618fd8593d808",
-      "current_blob": "9ce2efb1ecd9283d1f1cad6c82d96cd22ff56c11",
+      "current_blob": "95a48c72a4b797aacc2925d0f6956d59ab73766e",
       "disposition": "adapted",
       "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
     },
@@ -589,71 +592,7 @@
       "path": "features/roomdetails/impl/src/main/kotlin/io/element/android/features/roomdetails/impl/members/RoomMemberListPresenter.kt",
       "legacy_blob": "78e020fdd9b02e9b17a34c81827ff5527210c1fc",
       "current_blob": "0bd7eabaf3065fba52fb3ec53428879ddd789538",
-      "disposition": "adapted",
-      "reason": "Matches the selected legacy source blob."
-    },
-    {
-      "path": "features/roomdetails/impl/src/main/kotlin/io/element/android/features/roomdetails/impl/members/RoomMemberListState.kt",
-      "legacy_blob": "ef37660f4fcc6df91a9b39c8da124d521d5e9757",
-      "current_blob": "ef37660f4fcc6df91a9b39c8da124d521d5e9757",
-      "disposition": "ported",
-      "reason": "Matches the selected legacy source blob."
-    },
-    {
-      "path": "features/roomdetails/impl/src/main/kotlin/io/element/android/features/roomdetails/impl/members/RoomMemberListView.kt",
-      "legacy_blob": "dfdb8e89d511ed2a3a110f939ced31d1cf3c94f7",
-      "current_blob": "dfdb8e89d511ed2a3a110f939ced31d1cf3c94f7",
-      "disposition": "ported",
-      "reason": "Matches the selected legacy source blob."
-    },
-    {
-      "path": "features/roomdetails/impl/src/test/kotlin/io/element/android/features/roomdetails/impl/MatrixRoomFixture.kt",
-      "legacy_blob": "3bfbba19e43ee79145177c83dd0c2e0f67723f1c",
-      "current_blob": "3bfbba19e43ee79145177c83dd0c2e0f67723f1c",
-      "disposition": "ported",
-      "reason": "Matches the selected legacy source blob."
-    },
-    {
-      "path": "features/roomdetails/impl/src/test/kotlin/io/element/android/features/roomdetails/impl/members/RoomMemberListPresenterTest.kt",
-      "legacy_blob": "cc64b964d640dadf04272633c93340b60df36e20",
-      "current_blob": "cc64b964d640dadf04272633c93340b60df36e20",
-      "disposition": "ported",
-      "reason": "Matches the selected legacy source blob."
-    },
-    {
-      "path": "features/roomdirectory/impl/src/main/kotlin/io/element/android/features/roomdirectory/impl/root/RoomDirectoryPresenter.kt",
-      "legacy_blob": "6d1fe94fb5cd550bbfe6fe374dbaed98f11f97dc",
-      "current_blob": "6d1fe94fb5cd550bbfe6fe374dbaed98f11f97dc",
-      "disposition": "ported",
-      "reason": "Matches the selected legacy source blob."
-    },
-    {
-      "path": "features/securebackup/impl/src/main/kotlin/io/element/android/features/securebackup/impl/reset/ResetIdentityFlowManager.kt",
-      "legacy_blob": "d92eb577d0f9c1498add9c70adabda3aacbb2e8b",
-      "current_blob": "d5564f31095216710aa902e50f957c4f1f08bd60",
-      "disposition": "adapted",
-      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
-    },
-    {
-      "path": "features/securebackup/impl/src/main/kotlin/io/element/android/features/securebackup/impl/reset/ResetIdentityFlowNode.kt",
-      "legacy_blob": "e0d057244f415398accccfa5b2bb86bac9b212f5",
-      "current_blob": "e0d057244f415398accccfa5b2bb86bac9b212f5",
-      "disposition": "ported",
-      "reason": "Matches the selected legacy source blob."
-    },
-    {
-      "path": "features/securebackup/impl/src/main/kotlin/io/element/android/features/securebackup/impl/reset/password/ResetIdentityPasswordNode.kt",
-      "legacy_blob": "86f9e35fa660307868c414d71268a1bc240f13b1",
-      "current_blob": "86f9e35fa660307868c414d71268a1bc240f13b1",
-      "disposition": "ported",
-      "reason": "Matches the selected legacy source blob."
-    },
-    {
-      "path": "features/securebackup/impl/src/main/kotlin/io/element/android/features/securebackup/impl/reset/password/ResetIdentityPasswordPresenter.kt",
-      "legacy_blob": "1f1bbbbcb8000309c7ef4b4630a8b95849024ae0",
-      "current_blob": "583cb57af8af23e255c0f14ec0b64f00998058ce",
-      "disposition": "adapted",
-      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+…862 tokens truncated…"reason": "Reviewed legacy feature port with project formatting and integration adjustments."
     },
     {
       "path": "features/securebackup/impl/src/test/kotlin/io/element/android/features/securebackup/impl/reset/ResetIdentityFlowManagerTest.kt",
