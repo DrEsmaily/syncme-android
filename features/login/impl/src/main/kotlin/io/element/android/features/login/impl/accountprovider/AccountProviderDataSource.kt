@@ -67,7 +67,7 @@ class AccountProviderDataSource(
         if (!enterpriseService.canConnectToAnyAccountProvider()) {
             return configuredAccountProvider
         }
-        val lastUsedProvider = appPreferencesStore.getHomeserverHistoryFlow().first().firstOrNull()
+        val lastUsedProvider = appPreferencesStore.getHomeserverHistoryFlow().first().firstOrNull(::isAutomaticServerSuggestionAllowed)
         return lastUsedProvider?.let { AccountProvider.Generic(it) } ?: configuredAccountProvider
     }
 

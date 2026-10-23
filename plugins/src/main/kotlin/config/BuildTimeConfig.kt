@@ -9,11 +9,11 @@
 package config
 
 object BuildTimeConfig {
-    const val APPLICATION_ID = "io.element.android.x"
-    const val APPLICATION_NAME = "Element X"
-    val METADATA_HOST_REVERSED: String? = null
-    val OAUTH_CLIENT_URL_PATH: String? = "apps/android"
-    val URL_WEBSITE: String? = null
+    const val APPLICATION_ID = "com.github.dresmaily.syncme"
+    const val APPLICATION_NAME = "SyncMe"
+    val METADATA_HOST_REVERSED: String? = "com.github.dresmaily.syncme"
+    val OAUTH_CLIENT_URL_PATH: String? = null
+    val URL_WEBSITE: String? = "https://github.com/DrEsmaily/syncme-android"
     val URL_LOGO: String? = null
     val URL_COPYRIGHT: String? = null
     val URL_ACCEPTABLE_USE: String? = null
