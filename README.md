@@ -18,7 +18,10 @@ Start with [the development process](docs/syncme/development.md),
 
 Use JDK 21 and the Android SDK specified in `plugins/src/main/kotlin/Versions.kt`.
 Run `./gradlew :app:assembleGplayDebug --no-configuration-cache`.
-The initial foundation still builds the upstream application; SyncMe identity and features are transferred in separate reviewed changes.
+Test builds use the SyncMe Test label and `com.github.dresmaily.syncme.debug` application ID.
+The production identity is `com.github.dresmaily.syncme`, a new independent installation.
+Legacy SyncMe features are being transferred in separate reviewed changes.
+CI artifacts include the APK, checksum, source commit, signing certificate details and build URL.
 
 ## Origin and license
 
