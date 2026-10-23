@@ -28,6 +28,9 @@ jobs:
     env:
       GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=768m -Dfile.encoding=UTF-8
     steps:
+      - name: Select unit-test LFS fixtures
+        if: matrix.check == 'unit-tests'
+        run: git config --global lfs.fetchinclude 'libraries/mediaupload/impl/src/test/assets/*'
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
