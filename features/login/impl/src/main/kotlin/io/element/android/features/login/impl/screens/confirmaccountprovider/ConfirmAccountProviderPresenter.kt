@@ -78,7 +78,8 @@ class ConfirmAccountProviderPresenter(
         // Displayed without the scheme, so the field shows e.g. "matrix.org" rather than "https://matrix.org".
         var userInput by rememberSaveable { mutableStateOf<String?>(null) }
         val accountProviderInput = userInput ?: accountProvider.friendlyServerName()
-            .takeIf(::isAutomaticServerSuggestionAllowed).orEmpty()
+            .takeIf(::isAutomaticServerSuggestionAllowed)
+            .orEmpty()
 
         // Offer the first candidate that the current input is a (case-insensitive) prefix of.
         val accountProviderSuggestion = remember(accountProviderInput, autocompleteCandidates) {
