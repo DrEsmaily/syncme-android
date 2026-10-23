@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,9 +53,11 @@ import io.element.android.libraries.designsystem.theme.components.Icon
 import io.element.android.libraries.designsystem.theme.components.TopAppBar
 import io.element.android.libraries.matrix.api.encryption.identity.IdentityState
 import io.element.android.libraries.matrix.api.user.DisplayedStatus
+import io.element.android.libraries.matrix.api.user.UserPresence
 import io.element.android.libraries.matrix.ui.components.DisplayNameWithStatus
 import io.element.android.libraries.matrix.ui.components.aMatrixUserList
 import io.element.android.libraries.matrix.ui.model.getAvatarData
+import io.element.android.libraries.matrix.ui.presence.PresenceStatus
 import io.element.android.libraries.ui.strings.CommonStrings
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -69,6 +72,8 @@ internal fun MessagesViewTopBar(
     dmUserIdentityState: IdentityState?,
     sharedHistoryIcon: SharedHistoryIcon,
     dmUserStatus: DisplayedStatus?,
+    presenceLabel: String? = null,
+    presence: UserPresence = UserPresence.Unknown,
     onRoomDetailsClick: () -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -97,6 +102,8 @@ internal fun MessagesViewTopBar(
                     isTombstoned = isTombstoned,
                     heroes = heroes,
                     dmUserStatus = dmUserStatus,
+                    presenceLabel = presenceLabel,
+                    presence = presence,
                     modifier = titleModifier
                 )
 
@@ -151,6 +158,8 @@ private fun RoomAvatarAndNameRow(
     heroes: ImmutableList<AvatarData>,
     isTombstoned: Boolean,
     dmUserStatus: DisplayedStatus?,
+    presenceLabel: String?,
+    presence: UserPresence,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -164,14 +173,23 @@ private fun RoomAvatarAndNameRow(
                 isTombstoned = isTombstoned,
             ),
         )
-        DisplayNameWithStatus(
-            name = roomName ?: stringResource(CommonStrings.common_no_room_name),
-            status = dmUserStatus,
-            modifier = Modifier.padding(start = 8.dp),
-            style = ElementTheme.typography.fontBodyLgMedium,
-            nameColor = ElementTheme.colors.textPrimary,
-            nameFontStyle = FontStyle.Italic.takeIf { roomName == null },
-        )
+        Column(modifier = Modifier.padding(start = 8.dp)) {
+            DisplayNameWithStatus(
+                name = roomName ?: stringResource(CommonStrings.common_no_room_name),
+                status = dmUserStatus,
+                style = ElementTheme.typography.fontBodyLgMedium,
+                nameColor = ElementTheme.colors.textPrimary,
+                nameFontStyle = FontStyle.Italic.takeIf { roomName == null },
+            )
+            PresenceStatus(presence)
+            if (presenceLabel != null) {
+                Text(
+                    text = presenceLabel,
+                    style = ElementTheme.typography.fontBodySmRegular,
+                    color = ElementTheme.colors.textSecondary
+                )
+            }
+        }
     }
 }
 

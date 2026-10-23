@@ -73,6 +73,7 @@ import io.element.android.libraries.di.annotations.SessionCoroutineScope
 import io.element.android.libraries.emoji.api.recentemojis.AddRecentEmoji
 import io.element.android.libraries.featureflag.api.FeatureFlagService
 import io.element.android.libraries.featureflag.api.FeatureFlags
+import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.core.toThreadId
 import io.element.android.libraries.matrix.api.encryption.EncryptionService
 import io.element.android.libraries.matrix.api.encryption.identity.IdentityState
@@ -81,13 +82,17 @@ import io.element.android.libraries.matrix.api.room.JoinedRoom
 import io.element.android.libraries.matrix.api.room.RoomInfo
 import io.element.android.libraries.matrix.api.room.RoomMembersState
 import io.element.android.libraries.matrix.api.room.history.RoomHistoryVisibility
+import io.element.android.libraries.matrix.api.room.joinedRoomMembers
 import io.element.android.libraries.matrix.api.room.powerlevels.permissionsAsState
 import io.element.android.libraries.matrix.api.timeline.Timeline
 import io.element.android.libraries.matrix.api.timeline.item.event.EventOrTransactionId
 import io.element.android.libraries.matrix.api.timeline.item.event.toEventOrTransactionId
+import io.element.android.libraries.matrix.api.user.UserPresence
+import io.element.android.libraries.matrix.api.user.onlineMemberCount
 import io.element.android.libraries.matrix.ui.messages.reply.map
 import io.element.android.libraries.matrix.ui.model.dmUserStatus
 import io.element.android.libraries.matrix.ui.model.getAvatarData
+import io.element.android.libraries.matrix.ui.presence.observePresence
 import io.element.android.libraries.matrix.ui.room.getDirectRoomMember
 import io.element.android.libraries.textcomposer.model.MessageComposerMode
 import io.element.android.libraries.ui.strings.CommonStrings
@@ -106,6 +111,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 class MessagesPresenter(
     @Assisted private val navigator: MessagesNavigator,
     private val room: JoinedRoom,
+    private val matrixClient: MatrixClient,
     @Assisted private val composerPresenter: Presenter<MessageComposerState>,
     voiceMessageComposerPresenterFactory: DefaultVoiceMessageComposerPresenter.Factory,
     @Assisted private val timelinePresenter: Presenter<TimelineState>,
@@ -222,6 +228,14 @@ class MessagesPresenter(
 
         val membersState by room.membersStateFlow.collectAsState()
         val dmRoomMember by room.getDirectRoomMember(membersState)
+        LaunchedEffect(room.roomId) {
+            if (roomInfo.joinedMembersCount <= 128) room.updateMembers()
+        }
+        val joinedUsers = membersState.joinedRoomMembers().map { it.userId }.toSet()
+        val presenceStates = matrixClient.observePresence(joinedUsers)
+        val dmPresence = dmRoomMember?.userId?.let(presenceStates::get) ?: UserPresence.Unknown
+        val onlineMemberCount = if (roomInfo.isDm) null else presenceStates.onlineMemberCount(joinedUsers, roomInfo.joinedMembersCount)
+
         val roomMemberIdentityStateChanges = identityChangeState.roomMemberIdentityStateChanges
 
         // The top bar should show a "history" icon if:
@@ -270,7 +284,14 @@ class MessagesPresenter(
                     redactEventAction.value = AsyncAction.Uninitialized
                 }
                 is MessagesEvent.ToggleReaction -> {
-                    localCoroutineScope.toggleReaction(event.emoji, event.eventOrTransactionId)
+                    val targetEvent = timelineState.timelineItems
+                        .filterIsInstance<TimelineItem.Event>()
+                        .firstOrNull { it.eventOrTransactionId == event.eventOrTransactionId }
+                    val highlightedKeys = targetEvent?.reactionsState?.highlightedKeys.orEmpty()
+                    val isRemovingExistingReaction = event.emoji in highlightedKeys
+                    if (isRemovingExistingReaction || highlightedKeys.size < 3) {
+                        localCoroutineScope.toggleReaction(event.emoji, event.eventOrTransactionId)
+                    }
                 }
                 is MessagesEvent.InviteDialogDismissed -> {
                     hasDismissedInviteDialog = true
@@ -338,6 +359,8 @@ class MessagesPresenter(
             pinnedMessagesBannerState = pinnedMessagesBannerState,
             dmUserVerificationState = dmUserVerificationState,
             dmUserStatus = roomInfo.dmUserStatus(),
+            dmPresence = dmPresence,
+            onlineMemberCount = onlineMemberCount,
             roomMemberModerationState = roomMemberModerationState,
             topBarSharedHistoryIcon = topBarSharedHistoryIcon,
             successorRoom = roomInfo.successorRoom,
@@ -393,6 +416,7 @@ class MessagesPresenter(
             TimelineItemAction.CopyCaption -> handleCopyCaption(targetEvent)
             TimelineItemAction.CopyLink -> handleCopyLink(targetEvent)
             TimelineItemAction.Redact -> handleActionRedact(targetEvent, redactEventAction)
+            TimelineItemAction.CancelSending -> redact(targetEvent.eventOrTransactionId, reason = null)
             TimelineItemAction.Edit,
             TimelineItemAction.EditPoll -> handleActionEdit(targetEvent, composerState, enableTextFormatting)
             TimelineItemAction.AddCaption -> handleActionAddCaption(targetEvent, composerState)

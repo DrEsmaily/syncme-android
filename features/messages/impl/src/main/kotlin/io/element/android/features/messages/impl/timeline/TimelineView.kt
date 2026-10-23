@@ -21,6 +21,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
@@ -77,6 +78,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.messages.impl.crypto.sendfailure.resolve.ResolveVerifiedUserSendFailureView
@@ -213,6 +217,9 @@ fun TimelineView(
                             isLastOutgoingMessage = state.isLastOutgoingMessage(timelineItem.identifier()),
                             focusedEventId = state.focusedEventId,
                             displayThreadSummaries = state.displayThreadSummaries,
+                            mediaUploadProgress = (timelineItem as? TimelineItem.Event)
+                                ?.transactionId
+                                ?.let(state.mediaUploadProgress::get),
                             onUserDataClick = onUserDataClick,
                             onLinkClick = onLinkClick,
                             onLinkLongClick = ::onLinkLongClick,
@@ -242,7 +249,7 @@ fun TimelineView(
                 )
 
                 TimelineScrollHelper(
-                    hasAnyEvent = state.hasAnyEvent,
+                    timelineItems = state.timelineItems,
                     lazyListState = lazyListState,
                     forceJumpToBottomVisibility = forceJumpToBottomVisibility,
                     forceJumpToReadMarkerVisibility = forceJumpToReadMarkerVisibility,
@@ -328,7 +335,7 @@ private fun TimelinePrefetchingHelper(
 
 @Composable
 private fun BoxScope.TimelineScrollHelper(
-    hasAnyEvent: Boolean,
+    timelineItems: List<TimelineItem>,
     lazyListState: LazyListState,
     newEventState: NewEventState,
     isLive: Boolean,
@@ -345,9 +352,15 @@ private fun BoxScope.TimelineScrollHelper(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val isScrollFinished by remember { derivedStateOf { !lazyListState.isScrollInProgress } }
-    val canAutoScroll by remember {
-        derivedStateOf {
-            lazyListState.firstVisibleItemIndex < 3 && isLive
+    val isDragged by lazyListState.interactionSource.collectIsDraggedAsState()
+    var followLive by remember { mutableStateOf(lazyListState.firstVisibleItemIndex < 3 && isLive) }
+    val newestEventId = timelineItems.firstOrNull { it is TimelineItem.Event }?.identifier()
+    val canAutoScroll = followLive && isLive
+    LaunchedEffect(isDragged, isScrollFinished, isLive) {
+        if (isDragged) {
+            followLive = false
+        } else if (isScrollFinished) {
+            followLive = isLive && lazyListState.firstVisibleItemIndex < 3
         }
     }
     val isJumpToUnreadVisible by remember(jumpToUnread, forceJumpToReadMarkerVisibility) {
@@ -417,22 +430,55 @@ private fun BoxScope.TimelineScrollHelper(
         }
     }
 
-    LaunchedEffect(canAutoScroll, newEventState) {
-        val shouldScrollToBottom = isScrollFinished && when (newEventState) {
-            is NewEventState.FromOther -> canAutoScroll
-            NewEventState.FromMe -> true
-            NewEventState.None -> false
+    // Queue scrolling only for a new event, never merely because scrolling stopped near the bottom.
+    // FromMe can arrive after the item identity, so observe that transition independently.
+    var observedNewestEventId by remember { mutableStateOf(newestEventId) }
+    var observedNewEventState by remember { mutableStateOf(newEventState) }
+    var pendingAutoScroll by remember { mutableStateOf(false) }
+    LaunchedEffect(newestEventId, newEventState, isLive) {
+        val hasNewEvent = newestEventId != observedNewestEventId
+        val hasNewOwnEvent = newEventState == NewEventState.FromMe && observedNewEventState != NewEventState.FromMe
+        observedNewestEventId = newestEventId
+        observedNewEventState = newEventState
+        if (!isLive) {
+            pendingAutoScroll = false
+        } else if (newestEventId != null && (hasNewEvent || hasNewOwnEvent)) {
+            // Preserve follow intent before Compose moves the anchor to accommodate incoming items.
+            pendingAutoScroll = canAutoScroll || newEventState == NewEventState.FromMe
         }
-        if (shouldScrollToBottom) {
-            scrollToBottom(force = true)
+    }
+    LaunchedEffect(pendingAutoScroll, isDragged, isScrollFinished, isLive) {
+        if (isDragged || !isLive) {
+            // An explicit drag takes precedence over a queued automatic scroll.
+            pendingAutoScroll = false
+        } else if (pendingAutoScroll && isScrollFinished) {
+            pendingAutoScroll = false
+            lazyListState.scrollToItem(0)
         }
     }
 
     val latestOnScrollFinishAt by rememberUpdatedState(onScrollFinishAt)
-    LaunchedEffect(isScrollFinished, hasAnyEvent) {
-        if (isScrollFinished && hasAnyEvent) {
-            // Notify the parent composable about the first visible item index when scrolling finishes
-            latestOnScrollFinishAt(lazyListState.firstVisibleItemIndex)
+    val latestItems by rememberUpdatedState(timelineItems)
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    LaunchedEffect(lazyListState, newEventState, lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            // Observe laid-out item identities, not only scroll completion. New messages can be
+            // visible without any scrolling (short conversations and a persistent typing row).
+            snapshotFlow {
+                val items = latestItems
+                val firstKey = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull()?.key
+                val firstIndex = items.indexOfFirst { it.identifier() == firstKey }
+                if (lazyListState.isScrollInProgress || firstIndex < 0) {
+                    null
+                } else {
+                    // Observe the model in the snapshot too: layout and model can update separately,
+                    // and a local echo can acquire its server event ID without changing its list key.
+                    val event = items.drop(firstIndex).filterIsInstance<TimelineItem.Event>().firstOrNull()
+                    event?.let { Triple(firstIndex, it.identifier(), it.eventId) }
+                }
+            }.distinctUntilChanged().collect { visibleEvent ->
+                if (visibleEvent != null) latestOnScrollFinishAt(visibleEvent.first)
+            }
         }
     }
 

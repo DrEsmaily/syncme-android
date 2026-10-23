@@ -8,6 +8,7 @@
 
 package io.element.android.features.messages.impl.actionlist
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
@@ -45,6 +47,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -114,6 +117,7 @@ fun ActionListView(
 ) {
     val sheetState = rememberBottomSheetState(
         initialValue = SheetValue.Hidden,
+        enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
     )
     val coroutineScope = rememberCoroutineScope()
     val targetItem = (state.target as? ActionListState.Target.Success)?.event
@@ -163,6 +167,8 @@ fun ActionListView(
             modifier = modifier,
             scrollable = false,
         ) {
+            // Dismiss the entire action sheet with one Back, never step down to partial.
+            BackHandler { onDismiss() }
             ActionListViewContent(
                 state = state,
                 onActionClick = ::onItemActionClick,
@@ -196,7 +202,9 @@ private fun ActionListViewContent(
         is ActionListState.Target.Success -> {
             val actions = target.actions
             LazyColumn(
-                modifier = modifier.fillMaxWidth()
+                modifier = modifier
+                    .fillMaxWidth()
+                    .heightIn(max = (LocalConfiguration.current.screenHeightDp - 88).coerceAtLeast(240).dp)
             ) {
                 item {
                     Column {
