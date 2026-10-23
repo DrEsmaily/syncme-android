@@ -13,6 +13,7 @@ import com.android.build.gradle.internal.tasks.factory.dependsOn
 import com.android.build.gradle.tasks.GenerateBuildConfig
 import com.google.firebase.appdistribution.gradle.firebaseAppDistribution
 import config.BuildTimeConfig
+import config.SyncMeVersion
 import extension.AssetCopyTask
 import extension.GitBranchNameValueSource
 import extension.GitRevisionValueSource
@@ -45,8 +46,8 @@ android {
     defaultConfig {
         applicationId = BuildTimeConfig.APPLICATION_ID
         targetSdk = Versions.TARGET_SDK
-        versionCode = Versions.VERSION_CODE
-        versionName = Versions.VERSION_NAME
+        versionCode = SyncMeVersion.CODE
+        versionName = SyncMeVersion.NAME
 
         // Keep abiFilter for the universalApk
         ndk {
