@@ -26,9 +26,9 @@ import io.element.android.libraries.workmanager.api.WorkManagerRequestType
 import io.element.android.libraries.workmanager.api.WorkManagerRequestWrapper
 import io.element.android.libraries.workmanager.api.WorkManagerWorkerType
 import io.element.android.libraries.workmanager.api.workManagerTag
-import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.first
 import timber.log.Timber
+import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.toJavaDuration
