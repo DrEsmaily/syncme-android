@@ -272,7 +272,7 @@ class RoomListPresenter(
             .mapNotNull { it.dmUserId }
             .map(::UserId)
             .toSet()
-        val presenceStates = client.observePresence(presenceIds)
+        val presenceStates = client.observePresence(presenceIds.toImmutableSet())
 
         val showEmpty by remember {
             derivedStateOf {

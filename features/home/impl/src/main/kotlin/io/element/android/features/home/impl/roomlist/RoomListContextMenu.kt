@@ -46,7 +46,7 @@ import io.element.android.libraries.ui.strings.CommonStrings
 fun RoomListContextMenu(
     contextMenu: RoomListState.ContextMenu.Shown,
     canReportRoom: Boolean,
-    customTags: List<CustomRoomTag>,
+    customTags: kotlinx.collections.immutable.ImmutableList<CustomRoomTag>,
     eventSink: (RoomListEvent.ContextMenuEvent) -> Unit,
     onRoomSettingsClick: (roomId: RoomId) -> Unit,
     onReportRoomClick: (roomId: RoomId) -> Unit
@@ -97,7 +97,7 @@ fun RoomListContextMenu(
 private fun RoomListModalBottomSheetContent(
     contextMenu: RoomListState.ContextMenu.Shown,
     canReportRoom: Boolean,
-    customTags: List<CustomRoomTag>,
+    customTags: kotlinx.collections.immutable.ImmutableList<CustomRoomTag>,
     onToggleTag: (String) -> Unit,
     onRoomSettingsClick: () -> Unit,
     onLeaveRoomClick: () -> Unit,
@@ -254,7 +254,7 @@ internal fun RoomListContextMenuPreview(
     RoomListContextMenu(
         contextMenu = contextMenu,
         canReportRoom = true,
-        customTags = emptyList(),
+        customTags = kotlinx.collections.immutable.persistentListOf(),
         onRoomSettingsClick = {},
         onReportRoomClick = {},
         eventSink = {},
