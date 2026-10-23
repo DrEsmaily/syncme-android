@@ -12,10 +12,12 @@ import io.element.android.libraries.matrix.api.media.MediaPreviewValue
 import io.element.android.libraries.matrix.api.tracing.LogLevel
 import io.element.android.libraries.matrix.api.tracing.TraceLogPack
 import io.element.android.libraries.preferences.api.store.AppPreferencesStore
+import io.element.android.libraries.preferences.api.store.CustomRoomTag
 import io.element.android.libraries.preferences.api.store.NotificationSound
 import io.element.android.libraries.preferences.api.store.NotificationSoundChannelConfig
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.flow.updateAndGet
 
@@ -36,6 +38,8 @@ class InMemoryAppPreferencesStore(
     callRingtone: NotificationSound = NotificationSound.SystemDefault,
     callRingtoneChannelVersion: Int = 0,
     callRingtoneDisplayName: String? = null,
+    customRoomTags: List<CustomRoomTag> = emptyList(),
+    activeCustomRoomTagId: String? = null,
 ) : AppPreferencesStore {
     private val isDeveloperModeEnabled = MutableStateFlow(isDeveloperModeEnabled)
     private val isOtherAccountsExpanded = MutableStateFlow(isOtherAccountsExpanded)
@@ -53,6 +57,8 @@ class InMemoryAppPreferencesStore(
     private val callRingtone = MutableStateFlow(callRingtone)
     private val callRingtoneChannelVersion = MutableStateFlow(callRingtoneChannelVersion)
     private val callRingtoneDisplayName = MutableStateFlow(callRingtoneDisplayName)
+    private val customRoomTags = MutableStateFlow(customRoomTags)
+    private val activeCustomRoomTagIds = MutableStateFlow(setOfNotNull(activeCustomRoomTagId))
 
     override suspend fun setDeveloperModeEnabled(enabled: Boolean) {
         isDeveloperModeEnabled.value = enabled
@@ -179,6 +185,63 @@ class InMemoryAppPreferencesStore(
             callRingtoneVersion = callRingtoneChannelVersion.value,
             callRingtoneDisplayName = callRingtoneDisplayName.value,
         )
+    }
+
+    override fun getCustomRoomTagsFlow(): Flow<List<CustomRoomTag>> = customRoomTags
+
+    override fun getActiveCustomRoomTagIdFlow(): Flow<String?> = activeCustomRoomTagIds.map { it.firstOrNull() }
+
+    override fun getActiveCustomRoomTagIdsFlow(): Flow<Set<String>> = activeCustomRoomTagIds
+
+    override suspend fun toggleActiveCustomRoomTag(tagId: String) {
+        if (customRoomTags.value.none { it.id == tagId }) return
+        activeCustomRoomTagIds.update { if (tagId in it) it - tagId else it + tagId }
+    }
+
+    override suspend fun clearActiveCustomRoomTags() {
+        activeCustomRoomTagIds.value = emptySet()
+    }
+
+    override suspend fun createCustomRoomTag(name: String, icon: String): String? {
+        val normalized = name.trim()
+        if (normalized.isBlank()) return null
+        if (customRoomTags.value.any { it.name.equals(normalized, ignoreCase = true) }) return null
+        val id = java.util.UUID.randomUUID().toString()
+        customRoomTags.value = customRoomTags.value + CustomRoomTag(id, normalized, emptySet(), icon)
+        return id
+    }
+
+    override suspend fun renameCustomRoomTag(tagId: String, name: String): Boolean {
+        val normalized = name.trim().take(32)
+        if (normalized.isBlank() || customRoomTags.value.any { it.id != tagId && it.name.equals(normalized, ignoreCase = true) }) return false
+        if (customRoomTags.value.none { it.id == tagId }) return false
+        customRoomTags.value = customRoomTags.value.map { if (it.id == tagId) it.copy(name = normalized) else it }
+        return true
+    }
+
+    override suspend fun clearCustomRoomTagChats(tagId: String) {
+        customRoomTags.value = customRoomTags.value.map { if (it.id == tagId) it.copy(roomIds = emptySet()) else it }
+    }
+
+    override suspend fun deleteCustomRoomTag(tagId: String) {
+        customRoomTags.value = customRoomTags.value.filterNot { it.id == tagId }
+        activeCustomRoomTagIds.update { it - tagId }
+    }
+
+    override suspend fun setActiveCustomRoomTagId(tagId: String?) {
+        activeCustomRoomTagIds.value = setOfNotNull(tagId?.takeIf { id -> customRoomTags.value.any { it.id == id } })
+    }
+
+    override suspend fun toggleRoomInCustomTag(tagId: String, roomId: String) {
+        customRoomTags.value = customRoomTags.value.map { tag ->
+            if (tag.id != tagId) {
+                tag
+            } else {
+                val rooms = tag.roomIds.toMutableSet()
+                if (!rooms.add(roomId)) rooms.remove(roomId)
+                tag.copy(roomIds = rooms)
+            }
+        }
     }
 
     override suspend fun reset() {

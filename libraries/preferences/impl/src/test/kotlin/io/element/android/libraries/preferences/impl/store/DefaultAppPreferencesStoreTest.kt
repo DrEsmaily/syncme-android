@@ -7,11 +7,14 @@
 
 package io.element.android.libraries.preferences.impl.store
 
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.google.common.truth.Truth.assertThat
 import io.element.android.libraries.core.meta.BuildMeta
 import io.element.android.libraries.core.meta.BuildType
 import io.element.android.libraries.preferences.test.FakePreferenceDataStoreFactory
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
@@ -32,6 +35,75 @@ class DefaultAppPreferencesStoreTest {
         flavorDescription = "test",
         flavorShortDescription = "test",
     )
+
+    @Test
+    fun `custom tags validate names and keep memberships when renamed`() = runTest {
+        val store = createStore()
+        assertThat(store.createCustomRoomTag("  ")).isNull()
+        val family = requireNotNull(store.createCustomRoomTag(" Family "))
+        assertThat(store.createCustomRoomTag("family")).isNull()
+        val friends = requireNotNull(store.createCustomRoomTag("Friends"))
+        store.toggleRoomInCustomTag(family, "!room:example.org")
+        assertThat(store.renameCustomRoomTag(family, "FRIENDS")).isFalse()
+        assertThat(store.renameCustomRoomTag(family, "Relatives")).isTrue()
+        val tag = store.getCustomRoomTagsFlow().first().first { it.id == family }
+        assertThat(tag.name).isEqualTo("Relatives")
+        assertThat(tag.roomIds).containsExactly("!room:example.org")
+        store.clearCustomRoomTagChats(family)
+        assertThat(store.getCustomRoomTagsFlow().first().first { it.id == family }.roomIds).isEmpty()
+        store.deleteCustomRoomTag(friends)
+        assertThat(store.getCustomRoomTagsFlow().first().map { it.id }).containsExactly(family)
+    }
+
+    @Test
+    fun `custom room membership toggles and reset clears tags and selections`() = runTest {
+        val store = createStore()
+        val tag = requireNotNull(store.createCustomRoomTag("Family"))
+        store.toggleRoomInCustomTag(tag, "!room:example.org")
+        store.toggleRoomInCustomTag(tag, "!room:example.org")
+        assertThat(store.getCustomRoomTagsFlow().first().single().roomIds).isEmpty()
+        store.setActiveCustomRoomTagId(tag)
+        store.reset()
+        assertThat(store.getCustomRoomTagsFlow().first()).isEmpty()
+        assertThat(store.getActiveCustomRoomTagIdsFlow().first()).isEmpty()
+    }
+
+    @Test
+    fun `custom tag selections migrate persist and toggle independently`() = runTest {
+        val backing = FakePreferenceDataStoreFactory().create("legacy-tags")
+        val factory = object : io.element.android.libraries.preferences.api.store.PreferenceDataStoreFactory {
+            override fun create(name: String) = backing
+        }
+        val store = DefaultAppPreferencesStore(buildMeta, factory)
+        val first = requireNotNull(store.createCustomRoomTag("Family", "TAG"))
+        val second = requireNotNull(store.createCustomRoomTag("Friends", "TAG"))
+        backing.edit { it[stringPreferencesKey("syncmeActiveCustomRoomTagId")] = first }
+        assertThat(store.getActiveCustomRoomTagIdsFlow().first()).containsExactly(first)
+        store.toggleActiveCustomRoomTag(second)
+        val restored = DefaultAppPreferencesStore(buildMeta, factory)
+        assertThat(restored.getActiveCustomRoomTagIdsFlow().first()).containsExactly(first, second)
+        restored.toggleActiveCustomRoomTag(first)
+        assertThat(restored.getActiveCustomRoomTagIdsFlow().first()).containsExactly(second)
+        restored.toggleActiveCustomRoomTag("missing-tag")
+        assertThat(restored.getActiveCustomRoomTagIdsFlow().first()).containsExactly(second)
+        restored.deleteCustomRoomTag(second)
+        assertThat(restored.getActiveCustomRoomTagIdsFlow().first()).isEmpty()
+        restored.toggleActiveCustomRoomTag(first)
+        restored.clearActiveCustomRoomTags()
+        assertThat(restored.getActiveCustomRoomTagIdsFlow().first()).isEmpty()
+    }
+
+    @Test
+    fun `rapid custom tag selections do not overwrite each other`() = runTest {
+        val store = createStore()
+        val first = requireNotNull(store.createCustomRoomTag("Family", "TAG"))
+        val second = requireNotNull(store.createCustomRoomTag("Friends", "TAG"))
+        kotlinx.coroutines.coroutineScope {
+            launch { store.toggleActiveCustomRoomTag(first) }
+            launch { store.toggleActiveCustomRoomTag(second) }
+        }
+        assertThat(store.getActiveCustomRoomTagIdsFlow().first()).containsExactly(first, second)
+    }
 
     @Test
     fun `live location minimum distance defaults to 10`() = runTest {
