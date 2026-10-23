@@ -29,8 +29,8 @@ fun MatrixUserRow(
     modifier: Modifier = Modifier,
     avatarSize: AvatarSize = AvatarSize.UserListItem,
     verticalSpaceWidth: Dp = 12.dp,
-    trailingContent: @Composable (() -> Unit)? = null,
     presence: UserPresence = UserPresence.Unknown,
+    trailingContent: @Composable (() -> Unit)? = null,
 ) = UserRow(
     avatarData = matrixUser.getAvatarData(avatarSize),
     presence = presence,

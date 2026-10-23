@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2026 SyncMe contributors.
  *
- * SPDX-License-Identifier: AGPL-3.0-only
+ * SPDX-License-Identifier: AGPL-3.0-only.
  * Please see LICENSE files in the repository root for full details.
  */
 
@@ -40,7 +40,7 @@ import io.element.android.libraries.ui.strings.CommonStrings
 
 /** Bounded snapshots for visible users, released on navigation; one shared session stream. */
 @Composable
-fun MatrixClient.observePresence(users: Set<UserId>): Map<UserId, UserPresence> {
+fun MatrixClient.observePresence(users: kotlinx.collections.immutable.ImmutableSet<UserId>): Map<UserId, UserPresence> {
     val visibleUsers = users.sortedBy { it.value }.take(128).toSet()
     val subscription = remember(this) { PresenceSubscription(::trackPresence, ::releasePresence) }
     DisposableEffect(subscription) {
@@ -75,6 +75,7 @@ fun PresenceIndicator(presence: UserPresence, modifier: Modifier = Modifier) {
     val color = when (presence) {
         UserPresence.Online -> ElementTheme.colors.iconSuccessPrimary
         UserPresence.Away -> ElementTheme.colors.iconWarningPrimary
+        else -> return
     }
     Box(modifier.size(10.dp).background(color, CircleShape).semantics { contentDescription = label })
 }
