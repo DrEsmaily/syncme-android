@@ -89,6 +89,14 @@ android {
             storeFile = file("./signature/debug.keystore")
             storePassword = "android"
         }
+        register("syncmeRelease") {
+            keyAlias = providers.environmentVariable("SYNCME_RELEASE_KEY_ALIAS").orNull
+            keyPassword = providers.environmentVariable("SYNCME_RELEASE_KEY_PASSWORD").orNull
+            storeFile = providers.environmentVariable("SYNCME_RELEASE_STORE_FILE").orNull
+                ?.takeIf { it.isNotBlank() }
+                ?.let { file(it) }
+            storePassword = providers.environmentVariable("SYNCME_RELEASE_STORE_PASSWORD").orNull
+        }
         register("nightly") {
             keyAlias = environmentOrGradleValue("ELEMENT_ANDROID_NIGHTLY_KEYID", "signing.element.nightly.keyId")
             keyPassword = environmentOrGradleValue("ELEMENT_ANDROID_NIGHTLY_KEYPASSWORD", "signing.element.nightly.keyPassword")
@@ -108,7 +116,7 @@ android {
     buildTypes {
         val oAuthRedirectSchemeBase = BuildTimeConfig.METADATA_HOST_REVERSED ?: "io.element.android"
         getByName("debug") {
-            resValue("string", "app_name", "$baseAppName dbg")
+            resValue("string", "app_name", "$baseAppName Test")
             resValue(
                 "string",
                 "login_redirect_scheme",
@@ -119,13 +127,13 @@ android {
         }
 
         getByName("release") {
-            resValue("string", "app_name", "$baseAppName Test")
+            resValue("string", "app_name", baseAppName)
             resValue(
                 "string",
                 "login_redirect_scheme",
                 oAuthRedirectSchemeBase,
             )
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("syncmeRelease")
 
             optimization {
                 enable = true
