@@ -55,8 +55,12 @@ internal class RustPresenceService(
 ) {
     private val base = homeserver.trimEnd('/').toHttpUrl()
     private val http = OkHttpClient.Builder()
-        .connectTimeout(5, TimeUnit.SECONDS).readTimeout(40, TimeUnit.SECONDS)
-        .callTimeout(45, TimeUnit.SECONDS).followRedirects(false).followSslRedirects(false).build()
+        .connectTimeout(5, TimeUnit.SECONDS)
+        .readTimeout(40, TimeUnit.SECONDS)
+        .callTimeout(45, TimeUnit.SECONDS)
+        .followRedirects(false)
+        .followSslRedirects(false)
+        .build()
     private val registrations = mutableMapOf<UserId, Int>()
     private val snapshots = Channel<Pair<UserId, Long>>(Channel.UNLIMITED)
     private val pending = mutableSetOf<Pair<UserId, Long>>()
@@ -73,28 +77,25 @@ internal class RustPresenceService(
             scope.launch {
                 for ((user, epoch) in snapshots) {
                     try {
-                        if (!isCurrent(user, epoch)) continue
-                        val content = request(user, epoch) ?: continue
-                        synchronized(registrations) {
-                            if (isCurrent(user, epoch)) {
-                                mutableStates.value += user to presenceFromJson(content, System.currentTimeMillis())
-                                observedAtNanos[user] = System.nanoTime()
-                                trimSnapshots()
+                        if (isCurrent(user, epoch)) {
+                            request(user, epoch)?.let { content ->
+                                synchronized(registrations) {
+                                    if (isCurrent(user, epoch)) {
+                                        mutableStates.value += user to presenceFromJson(content, System.currentTimeMillis())
+                                        observedAtNanos[user] = System.nanoTime()
+                                        trimSnapshots()
+                                    }
+                                }
                             }
                         }
                     } catch (cancelled: CancellationException) {
                         throw cancelled
-                    } catch (error: Exception) {
-                        if (error is RateLimited) {
-                            val until = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(error.retryMs)
-                            cooldownUntilNanos.updateAndGet { previous -> maxOf(previous, until) }
-                        }
-                        synchronized(registrations) {
-                            if (isCurrent(user, epoch)) {
-                                mutableStates.value -= user
-                                observedAtNanos.remove(user)
-                            }
-                        }
+                    } catch (error: RateLimited) {
+                        val until = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(error.retryMs)
+                        cooldownUntilNanos.updateAndGet { previous -> maxOf(previous, until) }
+                        discardSnapshot(user, epoch)
+                    } catch (_: Exception) {
+                        discardSnapshot(user, epoch)
                     } finally {
                         synchronized(registrations) { pending.remove(user to epoch) }
                     }
@@ -109,8 +110,9 @@ internal class RustPresenceService(
         }.stateIn(scope, SharingStarted.Eagerly, null)
         scope.launch {
             combine(stableVisibility, syncState) { foreground, sync -> foreground to sync }
-                .distinctUntilChanged().collectLatest { (foreground, sync) ->
-                if (foreground == null || (foreground && sync != SyncState.Running)) return@collectLatest
+                .distinctUntilChanged()
+                .collectLatest { (foreground, sync) ->
+                if (foreground == null || foreground && sync != SyncState.Running) return@collectLatest
                 var retryMillis = publicationRetryMillis
                 while (kotlin.coroutines.coroutineContext.isActive) {
                     try {
@@ -133,7 +135,8 @@ internal class RustPresenceService(
         }
         scope.launch {
             combine(syncState, stableVisibility) { sync, foreground -> sync == SyncState.Running && foreground == true }
-                .distinctUntilChanged().collectLatest { enabled ->
+                .distinctUntilChanged()
+                .collectLatest { enabled ->
                     synchronized(registrations) {
                         generation++
                         running = enabled
@@ -160,6 +163,13 @@ internal class RustPresenceService(
                         }
                     }
                 }
+        }
+    }
+
+    private fun discardSnapshot(user: UserId, epoch: Long) = synchronized(registrations) {
+        if (isCurrent(user, epoch)) {
+            mutableStates.value -= user
+            observedAtNanos.remove(user)
         }
     }
 
@@ -215,8 +225,11 @@ internal class RustPresenceService(
         if (!isCurrent(user, epoch)) return null
         val session = sessionStore.getSession(sessionId.value) ?: return null
         if (!isCurrent(user, epoch)) return null
-        val url = base.newBuilder().addPathSegments("_matrix/client/v3/presence")
-            .addPathSegment(user.value).addPathSegment("status").build()
+        val url = base.newBuilder()
+            .addPathSegments("_matrix/client/v3/presence")
+            .addPathSegment(user.value)
+            .addPathSegment("status")
+            .build()
         return suspendCancellableCoroutine { continuation ->
             val call = http.newCall(Request.Builder().url(url).header("Authorization", "Bearer ${session.accessToken}").build())
             call.timeout().timeout(5, TimeUnit.SECONDS)
