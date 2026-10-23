@@ -26,7 +26,7 @@ external password managers control their own stored suggestions.
 Production signing must use a private release key before a public production release.
 The inherited shared debug signature is only suitable for test builds.
 
-## Current validation status
+## Validation records
 
 Build, unit tests and lint all passed for integration candidate
 `7d4a6ac0a0bba5b47c6eed17648d08ca27f38dd4` in
@@ -38,11 +38,12 @@ The checks cover APK assembly and identity/signature validation, unit tests (inc
 server suggestions), Android lint, ktlint and detekt. They do not establish on-device
 behaviour or production release readiness.
 
-The owner configured protection for both `main` and `staging`; both are confirmed protected.
-`branch-protection.json` records the intended required checks. Enabling those required
-status checks remains an owner-side setting because this integration cannot administer
-branch protection.
+Both permanent branches are protected. The branch API confirms `Verify (build)`,
+`Verify (unit-tests)` and `Verify (lint)` as required checks, enforced for everyone.
+The owner reports enabling up-to-date requirements; the integration cannot independently
+read that strict flag because the administration endpoint returns HTTP 403.
 
-The existing Syncme repository remains unchanged. Feature migration, private production
-signing and device acceptance tests remain separate work tracked in
+The [build 259 audit](migration-audit.md) and [file manifest](legacy-port-manifest.json)
+record the later feature integration and deliberate differences. The existing Syncme repository
+remains unchanged. Integration results, private production signing and device acceptance are tracked in
 [issue 3](https://github.com/DrEsmaily/syncme-android/issues/3).

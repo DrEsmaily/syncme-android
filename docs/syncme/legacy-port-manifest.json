@@ -1,0 +1,1240 @@
+{
+  "legacy_source": "345864b15f2b8b6ca41728a50a280bd5efa81f39",
+  "legacy_source_branch": "build/syncme-259-scroll",
+  "legacy_default_branch_at_review": "c5c5ba1f096572d31846ac3a822924314252e0c4",
+  "upstream_base": "def8f7f34824dcc8b05483086c333ce2b5cb08d9",
+  "entries": [
+    {
+      "path": "app/build.gradle.kts",
+      "legacy_blob": "035687b9eb3370645da13d3d66dfda8610d4d775",
+      "current_blob": "18e0e3a18bc40ec4da0cca9c388f813186fffc0f",
+      "disposition": "adapted",
+      "reason": "Keep the approved independent SyncMe installation identity, distinguish test builds, and use monotonic SyncMe versioning."
+    },
+    {
+      "path": "app/src/main/kotlin/io/element/android/x/ElementXApplication.kt",
+      "legacy_blob": "1b988cd66343d14b1db4e0db21515d3639d7a4a8",
+      "current_blob": "b39dc353fcdb159fd1ab396d7dd053b77ddc804c",
+      "disposition": "retained-upstream",
+      "reason": "Legacy change adds optional internal diagnostic capture/export; preserve upstream behaviour without those diagnostic hooks."
+    },
+    {
+      "path": "app/src/main/kotlin/io/element/android/x/MainActivity.kt",
+      "legacy_blob": "9f2095c797eaa43486ef2d50178b03e931adead0",
+      "current_blob": "f9072c8440b30b7387fbddb6805ae85b3612d716",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "app/src/main/kotlin/io/element/android/x/initializer/PlatformInitializer.kt",
+      "legacy_blob": "682d175095f50b207cb75d5e9aed57bd38dd6cba",
+      "current_blob": "1d2504ae674c14aa45f9267d3315294feed5f29f",
+      "disposition": "retained-upstream",
+      "reason": "Legacy change adds optional internal diagnostic capture/export; preserve upstream behaviour without those diagnostic hooks."
+    },
+    {
+      "path": "app/src/main/res/xml/file_providers.xml",
+      "legacy_blob": "a6fe84ed6e42118df7bca07f53030d8f4bdec89d",
+      "current_blob": "330a2e0c3f0d998a73227be7a72e8340531a14d5",
+      "disposition": "retained-upstream",
+      "reason": "Legacy change adds optional internal diagnostic capture/export; preserve upstream behaviour without those diagnostic hooks."
+    },
+    {
+      "path": "app/src/main/res/xml/network_security_config.xml",
+      "legacy_blob": "96add8d148c681ba4090669126dbeb96941cf92d",
+      "current_blob": "98b80d94cb98aeb17b88dd2d02708a05851bc349",
+      "disposition": "retained-upstream",
+      "reason": "Keep the pinned upstream TLS verifier and its revocation transport configuration; the legacy replacement removes an additional revocation checker."
+    },
+    {
+      "path": "appicon/element/src/main/res/drawable-nodpi/syncme_launcher.webp",
+      "legacy_blob": "ff32d0a2ae61394f5d8fc6a0a14d5f79b312230b",
+      "current_blob": "ff32d0a2ae61394f5d8fc6a0a14d5f79b312230b",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "appicon/element/src/main/res/mipmap-anydpi-v26/ic_launcher.xml",
+      "legacy_blob": "a2e4daae7f5733a779d64cd2c1dc18a4af2837a7",
+      "current_blob": "a2e4daae7f5733a779d64cd2c1dc18a4af2837a7",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "appicon/element/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml",
+      "legacy_blob": "a2e4daae7f5733a779d64cd2c1dc18a4af2837a7",
+      "current_blob": "a2e4daae7f5733a779d64cd2c1dc18a4af2837a7",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "appnav/src/main/kotlin/io/element/android/appnav/LoggedInFlowTransitionHandler.kt",
+      "legacy_blob": "806e8d12a9e7a9739f2cf1df3fc23b2e10f567da",
+      "current_blob": "2afe7aa6e9216cb1196d40664d8c98070d811b13",
+      "disposition": "adapted",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "appnav/src/test/kotlin/io/element/android/appnav/RootFlowNodeTest.kt",
+      "legacy_blob": "06f3cf0a887c60bf2bf83055e5c7c30ed6963a12",
+      "current_blob": "06f3cf0a887c60bf2bf83055e5c7c30ed6963a12",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/createroom/impl/src/main/kotlin/io/element/android/features/createroom/impl/configureroom/ConfigureRoomView.kt",
+      "legacy_blob": "be2b0ded6f8b3d3680bc3508b0a68ec7d5a3aaaf",
+      "current_blob": "be2b0ded6f8b3d3680bc3508b0a68ec7d5a3aaaf",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/HomeFlowNode.kt",
+      "legacy_blob": "472faa75c2d605cd07da0dcdd25a5c07d0600657",
+      "current_blob": "9d9da2b6f9d683ba2a591e4d55334bbd2c5f772d",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/HomeView.kt",
+      "legacy_blob": "9176091e767c74b580d5867fa97f82e7b67cb2ca",
+      "current_blob": "4d9b422a2bab947ab255e2fa2ee46238044370af",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/components/HomeTopBar.kt",
+      "legacy_blob": "c6b94483a11c59d5f3ba701adc0989ab9bfee985",
+      "current_blob": "8fabd9e90e65c93ae2e65b1321c67d5074ef1134",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/components/RoomSummaryRow.kt",
+      "legacy_blob": "7bea932cca4c9ead0ef5f3f26c04e6160bd9a072",
+      "current_blob": "b4e293a7134a7de9910ef8a3beb75ffadbf6382e",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/datasource/RoomListDataSource.kt",
+      "legacy_blob": "bec3c447532bf67470e3ea246f4203e40e7d7ca4",
+      "current_blob": "7caa947f1ee6f39f7712a1c0db8cab0c4551ee60",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/datasource/RoomListRoomSummaryFactory.kt",
+      "legacy_blob": "7ea2460cc6481bd8a7f4a4a66d22b0543720d5e1",
+      "current_blob": "7ea2460cc6481bd8a7f4a4a66d22b0543720d5e1",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/filters/RoomListFiltersEvent.kt",
+      "legacy_blob": "7a599dc02288a9ab278d865059087cea1c90681e",
+      "current_blob": "7a599dc02288a9ab278d865059087cea1c90681e",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/filters/RoomListFiltersPresenter.kt",
+      "legacy_blob": "ddaf0a422f3670567399b98656cbe1f11030243a",
+      "current_blob": "d2f39a4949121a68e5ce464ccff5edfb1687e21c",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/filters/RoomListFiltersState.kt",
+      "legacy_blob": "0174faa5031ec9f21b99b83b9f519c64503e95a1",
+      "current_blob": "0174faa5031ec9f21b99b83b9f519c64503e95a1",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/filters/RoomListFiltersStatePreviewParam.kt",
+      "legacy_blob": "4d11a317df52b382548730b440f7e6dc1bf4aad9",
+      "current_blob": "4d11a317df52b382548730b440f7e6dc1bf4aad9",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/filters/RoomListFiltersView.kt",
+      "legacy_blob": "286ea776b12afc238d9572fab2d618fd8593d808",
+      "current_blob": "9ce2efb1ecd9283d1f1cad6c82d96cd22ff56c11",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/model/RoomListRoomSummary.kt",
+      "legacy_blob": "c0a2fcf663b2e49cb4b5ff28154eb8ac4e9cf823",
+      "current_blob": "c0a2fcf663b2e49cb4b5ff28154eb8ac4e9cf823",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/roomlist/RoomListContextMenu.kt",
+      "legacy_blob": "e38904599f53ff789480ac188040fb42e265f56c",
+      "current_blob": "11746a3fa725bebce4a51ca51a7746c4fdc75e5f",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/roomlist/RoomListEvent.kt",
+      "legacy_blob": "46a91b0a654cd882c7ffed0be3d560e0b7ead2d4",
+      "current_blob": "46a91b0a654cd882c7ffed0be3d560e0b7ead2d4",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/home/impl/src/main/kotlin/io/element/android/features/home/impl/roomlist/RoomListPresenter.kt",
+      "legacy_blob": "65e37b776f5762dde4f24d372bd9c901d4061b4e",
+      "current_blob": "c63a1416f4adbb10824842f527e9f4dae9b30485",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "features/home/impl/src/main/res/drawable/syncme_tag_outline.xml",
+      "legacy_blob": "fa8e9b6a64534441da449dacddbea96c82e75a23",
+      "current_blob": "fa8e9b6a64534441da449dacddbea96c82e75a23",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/home/impl/src/test/kotlin/io/element/android/features/home/impl/filters/RoomListFiltersPresenterTest.kt",
+      "legacy_blob": "6f06672359b01e099f2a7fb2860989fe28d14509",
+      "current_blob": "6f06672359b01e099f2a7fb2860989fe28d14509",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/home/impl/src/test/kotlin/io/element/android/features/home/impl/roomlist/RoomListContextMenuTest.kt",
+      "legacy_blob": "7cdcc41bad3522dc8a39d9028bea310494981d3d",
+      "current_blob": "88a527e332aa158b1295663f37aee56a94aff54b",
+      "disposition": "adapted",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/home/impl/src/test/kotlin/io/element/android/features/home/impl/roomlist/RoomListPresenterTest.kt",
+      "legacy_blob": "d990c02f6ab8a8a545f98b0f295f3f187fc9785b",
+      "current_blob": "d990c02f6ab8a8a545f98b0f295f3f187fc9785b",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/lockscreen/impl/src/main/kotlin/io/element/android/features/lockscreen/impl/pin/DefaultPinCodeManager.kt",
+      "legacy_blob": "458d865829b5db12ce9b4eac719088d5bdd55033",
+      "current_blob": "4811831ddad301159bee34d7f829870436b1a959",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "features/login/impl/src/main/kotlin/io/element/android/features/login/impl/LoginFlowTransitionHandler.kt",
+      "legacy_blob": "840f7573f79900766fc8cb44660ccf9784ba4de4",
+      "current_blob": "840f7573f79900766fc8cb44660ccf9784ba4de4",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/login/impl/src/main/kotlin/io/element/android/features/login/impl/screens/confirmaccountprovider/ConfirmAccountProviderPresenter.kt",
+      "legacy_blob": "3962f1a004ff14a1b91d9c2aba679d8806e4eb1a",
+      "current_blob": "e99f3c8d4395a596734257b9e5909d41fa47927f",
+      "disposition": "adapted",
+      "reason": "Preserve independently tested server-suggestion filtering and manual entry."
+    },
+    {
+      "path": "features/login/impl/src/main/kotlin/io/element/android/features/login/impl/screens/loginpassword/LoginPasswordView.kt",
+      "legacy_blob": "593af53f6a889f4faf07e8416ff583c61258f901",
+      "current_blob": "593af53f6a889f4faf07e8416ff583c61258f901",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/login/impl/src/main/kotlin/io/element/android/features/login/impl/screens/onboarding/OnBoardingView.kt",
+      "legacy_blob": "f8511de541d8263643435d35bd4068d1ed67f839",
+      "current_blob": "613f0e2f468eb5718793f74b37fbfd88f667d7e8",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "features/login/impl/src/main/res/drawable/syncme_welcome_mark.xml",
+      "legacy_blob": "77a7a332ea2d86df0359b1b928e06b4f9f15e4fa",
+      "current_blob": "77a7a332ea2d86df0359b1b928e06b4f9f15e4fa",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/login/impl/src/test/kotlin/io/element/android/features/login/impl/screens/confirmaccountprovider/ConfirmAccountProviderPresenterTest.kt",
+      "legacy_blob": "36d6d799bc42b9273c89b946715ad7326d188f43",
+      "current_blob": "2aff877682a8aaf16e1cd395f56ab248a6a573f1",
+      "disposition": "adapted",
+      "reason": "Preserve independently tested server-suggestion filtering and manual entry."
+    },
+    {
+      "path": "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/MessagesPresenter.kt",
+      "legacy_blob": "0e971d9c0d1e20f37de23a3d880772894173a133",
+      "current_blob": "b0ff8504f4db5c8e2808431aab603dddb01cd1b9",
+      "disposition": "adapted",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/MessagesState.kt",
+      "legacy_blob": "957ffaf4e2878506821e6a960f061ef1490c0617",
+      "current_blob": "957ffaf4e2878506821e6a960f061ef1490c0617",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/MessagesView.kt",
+      "legacy_blob": "3196cd8e0234a94eeec96776ca93536bc2c40dbb",
+      "current_blob": "3196cd8e0234a94eeec96776ca93536bc2c40dbb",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/actionlist/ActionListPresenter.kt",
+      "legacy_blob": "6eba12187902fc9047a39b20a6f3db1f2346f2db",
+      "current_blob": "6eba12187902fc9047a39b20a6f3db1f2346f2db",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/actionlist/ActionListView.kt",
+      "legacy_blob": "0ffbefa5e523b53a82ac7955e17da4effda3272f",
+      "current_blob": "639b15140fee1b8baa23eced22d87ae433a7a1d1",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/actionlist/model/TimelineItemAction.kt",
+      "legacy_blob": "2cbcc9e48429f68dc3a4fc04d443f9e4ccf91147",
+      "current_blob": "2cbcc9e48429f68dc3a4fc04d443f9e4ccf91147",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/attachments/preview/AttachmentsPreviewPresenter.kt",
+      "legacy_blob": "70cd41746ad8e9c4983a9bac8ff663e7443c65c9",
+      "current_blob": "428ef6cb2997f43da8efd00903715dfe281b8b2e",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/attachments/preview/AttachmentsPreviewView.kt",
+      "legacy_blob": "c757b2d9b4585316afa5f28fa415be23c638ccfa",
+      "current_blob": "8b11107463eb54d21e938cda8db0160e6ede4f06",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/attachments/video/DefaultMediaOptimizationSelectorPresenter.kt",
+      "legacy_blob": "270400d6a087d4d1f22e70741a1d0ccaa6af92ba",
+      "current_blob": "270400d6a087d4d1f22e70741a1d0ccaa6af92ba",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/timeline/TimelinePresenter.kt",
+      "legacy_blob": "ccf4595a1201f5a65d50580bc9df4ee0d305cc81",
+      "current_blob": "1f7181eac8bf749b3a8a061c89c895a1106045c2",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/timeline/TimelineState.kt",
+      "legacy_blob": "5b96b85dded816b62a6e36c650d7d5fb94c4d5c3",
+      "current_blob": "5b96b85dded816b62a6e36c650d7d5fb94c4d5c3",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/timeline/TimelineView.kt",
+      "legacy_blob": "63edd8f5d748d8b5bdc8e8d3733f388ee5860719",
+      "current_blob": "63edd8f5d748d8b5bdc8e8d3733f388ee5860719",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/timeline/components/MessageEventBubble.kt",
+      "legacy_blob": "92771f4b6497514698d99ee3f232fa68976ef4cb",
+      "current_blob": "92771f4b6497514698d99ee3f232fa68976ef4cb",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/timeline/components/MessagesReactionButton.kt",
+      "legacy_blob": "0a9910a7b318fd22dd6c786542e4c2cffd1a79be",
+      "current_blob": "0a9910a7b318fd22dd6c786542e4c2cffd1a79be",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/timeline/components/TimelineItemEventRow.kt",
+      "legacy_blob": "7f43e11ef893805020712427fee9d9225c19a1d9",
+      "current_blob": "a6fca937f440bbcb847310e4a5c8c85509f50ffc",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/timeline/components/TimelineItemReactionsView.kt",
+      "legacy_blob": "05a027df440a849b1ef4d0230d3e9469dc7a47b1",
+      "current_blob": "05a027df440a849b1ef4d0230d3e9469dc7a47b1",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/timeline/components/TimelineItemRow.kt",
+      "legacy_blob": "0b7fd24a79bbaf8cb8556a6897a47c5f242737df",
+      "current_blob": "0b7fd24a79bbaf8cb8556a6897a47c5f242737df",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/timeline/components/customreaction/CustomReactionBottomSheet.kt",
+      "legacy_blob": "e30be2c1fa951385b9bde3bb1ba4784b012cacc9",
+      "current_blob": "e30be2c1fa951385b9bde3bb1ba4784b012cacc9",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/timeline/components/event/TimelineItemFileView.kt",
+      "legacy_blob": "c98004859493a10b284148a01b89567a8551097d",
+      "current_blob": "c98004859493a10b284148a01b89567a8551097d",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/timeline/components/receipt/bottomsheet/ReadReceiptBottomSheet.kt",
+      "legacy_blob": "f3b31ffc606377c42c4a74927f2e87b10fab39a8",
+      "current_blob": "f3b31ffc606377c42c4a74927f2e87b10fab39a8",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/timeline/factories/OutgoingReadReceipts.kt",
+      "legacy_blob": "e37393056aa721eb9b57122a27fa4b0a28086e31",
+      "current_blob": "e37393056aa721eb9b57122a27fa4b0a28086e31",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/timeline/factories/TimelineItemsFactory.kt",
+      "legacy_blob": "a598d4fc7e05b911676cdec692e51270fc23de06",
+      "current_blob": "a598d4fc7e05b911676cdec692e51270fc23de06",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/messages/impl/src/main/kotlin/io/element/android/features/messages/impl/topbars/MessagesViewTopBar.kt",
+      "legacy_blob": "4001bc9e5468cf6e31224c1f16d2e53a48068af6",
+      "current_blob": "4001bc9e5468cf6e31224c1f16d2e53a48068af6",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/messages/impl/src/test/kotlin/io/element/android/features/messages/impl/MessagesPresenterTest.kt",
+      "legacy_blob": "3ed062e63ca0241faa0feb2ef3babe219df6dfb4",
+      "current_blob": "3ed062e63ca0241faa0feb2ef3babe219df6dfb4",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/messages/impl/src/test/kotlin/io/element/android/features/messages/impl/attachments/AttachmentsPreviewPresenterTest.kt",
+      "legacy_blob": "9aa9a340010e6be676c8ee7229679196b678edc7",
+      "current_blob": "c9f6aa9631e260dff1d59d9a44df8c8a0f5c8373",
+      "disposition": "retained-upstream",
+      "reason": "The legacy added constructor argument was removed during unused-dependency cleanup; existing coverage remains applicable."
+    },
+    {
+      "path": "features/messages/impl/src/test/kotlin/io/element/android/features/messages/impl/attachments/video/DefaultMediaOptimizationSelectorPresenterTest.kt",
+      "legacy_blob": "07b3f003dc55baee3ecf04b9b5900d99e31d8ae6",
+      "current_blob": "07b3f003dc55baee3ecf04b9b5900d99e31d8ae6",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/messages/impl/src/test/kotlin/io/element/android/features/messages/impl/timeline/TimelinePresenterTest.kt",
+      "legacy_blob": "a0fef98ec6a1ae4e95a1d18423fbd53a077adb66",
+      "current_blob": "a0fef98ec6a1ae4e95a1d18423fbd53a077adb66",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/messages/impl/src/test/kotlin/io/element/android/features/messages/impl/timeline/TimelineViewTest.kt",
+      "legacy_blob": "1e7a0b33a4ff2afd9a1e0c43184ac4850a2681f3",
+      "current_blob": "1e7a0b33a4ff2afd9a1e0c43184ac4850a2681f3",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/messages/impl/src/test/kotlin/io/element/android/features/messages/impl/timeline/factories/OutgoingReadReceiptsTest.kt",
+      "legacy_blob": "29135d463e1857b72b3d5941a55b38d63a73223b",
+      "current_blob": "29135d463e1857b72b3d5941a55b38d63a73223b",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/poll/api/src/main/kotlin/io/element/android/features/poll/api/pollcontent/PollContentView.kt",
+      "legacy_blob": "c57cefef051780658cc4e820f43fa05fbe94939f",
+      "current_blob": "78384d42fc97c030ff0adc94b633411d3d0c8f44",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "features/preferences/impl/src/main/kotlin/io/element/android/features/preferences/impl/account/PreferencesAccountView.kt",
+      "legacy_blob": "e9befc81be500cdd9aad0ccfcb50cde38443afce",
+      "current_blob": "f876222f796ebb02786d32da6a8d627804c65289",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "features/preferences/impl/src/main/kotlin/io/element/android/features/preferences/impl/developer/DeveloperSettingsView.kt",
+      "legacy_blob": "899fd5b16482fa16ed75fa5f598a3b22d508042e",
+      "current_blob": "b36521ef0ca978ba804d5adb2d2edeaa99b9071a",
+      "disposition": "retained-upstream",
+      "reason": "Legacy change adds optional internal diagnostic capture/export; preserve upstream behaviour without those diagnostic hooks."
+    },
+    {
+      "path": "features/preferences/impl/src/main/kotlin/io/element/android/features/preferences/impl/root/PreferencesRootNode.kt",
+      "legacy_blob": "524a8b0092b1973db63fcf1c995482363a591db4",
+      "current_blob": "524a8b0092b1973db63fcf1c995482363a591db4",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/preferences/impl/src/main/kotlin/io/element/android/features/preferences/impl/root/PreferencesRootPresenter.kt",
+      "legacy_blob": "9f5b24f72a680f56c118a3768893ab0505480566",
+      "current_blob": "9f5b24f72a680f56c118a3768893ab0505480566",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/preferences/impl/src/main/kotlin/io/element/android/features/preferences/impl/root/PreferencesRootView.kt",
+      "legacy_blob": "824d2476ca2f69144aee8f25c4ec55ae98304a07",
+      "current_blob": "75affbd53b9247b7e687e52a0b963e1010c50837",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "features/preferences/impl/src/main/kotlin/io/element/android/features/preferences/impl/root/VersionFormatter.kt",
+      "legacy_blob": "353229e2875d16fd30af8250c0f0940584757e1a",
+      "current_blob": "0ece9fe1dd71a339850bedea479addffdca448d6",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "features/preferences/impl/src/main/kotlin/io/element/android/features/preferences/impl/utils/ShowDeveloperSettingsProvider.kt",
+      "legacy_blob": "e25e1ac571bccf96e08f2678e119d682362492a9",
+      "current_blob": "e25e1ac571bccf96e08f2678e119d682362492a9",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/preferences/impl/src/test/kotlin/io/element/android/features/preferences/impl/root/PreferencesRootPresenterTest.kt",
+      "legacy_blob": "cdb7d86a528ed770609b36ac333651bad0627e9e",
+      "current_blob": "cdb7d86a528ed770609b36ac333651bad0627e9e",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/preferences/impl/src/test/kotlin/io/element/android/features/preferences/impl/root/PreferencesRootViewTest.kt",
+      "legacy_blob": "8630f44f9b7548a633759b00401850adf697d1c0",
+      "current_blob": "8630f44f9b7548a633759b00401850adf697d1c0",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/preferences/impl/src/test/kotlin/io/element/android/features/preferences/impl/root/VersionFormatterTest.kt",
+      "legacy_blob": "aee843dc5558f8272ee3e53a49cd6cbaf72eb752",
+      "current_blob": "ff74e9e85de076a1bde55d364be974272fa5036d",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "features/roomdetails/impl/src/main/kotlin/io/element/android/features/roomdetails/impl/RoomDetailsEvent.kt",
+      "legacy_blob": "01656010dc5f1f3a7cee0bf193d8bba4607e6214",
+      "current_blob": "01656010dc5f1f3a7cee0bf193d8bba4607e6214",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/roomdetails/impl/src/main/kotlin/io/element/android/features/roomdetails/impl/RoomDetailsPresenter.kt",
+      "legacy_blob": "fa4fcfef3aba683145cf04e4f049587a192358c4",
+      "current_blob": "64f04150b44f0e385c28d46df5dd12b3b3cd2bef",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "features/roomdetails/impl/src/main/kotlin/io/element/android/features/roomdetails/impl/RoomDetailsState.kt",
+      "legacy_blob": "7501d6fc1158240528f6eae83e6a1d302be3d7fc",
+      "current_blob": "7501d6fc1158240528f6eae83e6a1d302be3d7fc",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/roomdetails/impl/src/main/kotlin/io/element/android/features/roomdetails/impl/RoomDetailsView.kt",
+      "legacy_blob": "289178a7a05065d1caeca056ae0a09b2961005e8",
+      "current_blob": "94aa9cd031573dcfa1d7104cbb2e9a507b04e58f",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "features/roomdetails/impl/src/main/kotlin/io/element/android/features/roomdetails/impl/members/RoomMemberListEvent.kt",
+      "legacy_blob": "7d9f0b6b354bdfefdac90b2204c87b4d097f2e70",
+      "current_blob": "7d9f0b6b354bdfefdac90b2204c87b4d097f2e70",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/roomdetails/impl/src/main/kotlin/io/element/android/features/roomdetails/impl/members/RoomMemberListPresenter.kt",
+      "legacy_blob": "78e020fdd9b02e9b17a34c81827ff5527210c1fc",
+      "current_blob": "0bd7eabaf3065fba52fb3ec53428879ddd789538",
+      "disposition": "adapted",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/roomdetails/impl/src/main/kotlin/io/element/android/features/roomdetails/impl/members/RoomMemberListState.kt",
+      "legacy_blob": "ef37660f4fcc6df91a9b39c8da124d521d5e9757",
+      "current_blob": "ef37660f4fcc6df91a9b39c8da124d521d5e9757",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/roomdetails/impl/src/main/kotlin/io/element/android/features/roomdetails/impl/members/RoomMemberListView.kt",
+      "legacy_blob": "dfdb8e89d511ed2a3a110f939ced31d1cf3c94f7",
+      "current_blob": "dfdb8e89d511ed2a3a110f939ced31d1cf3c94f7",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/roomdetails/impl/src/test/kotlin/io/element/android/features/roomdetails/impl/MatrixRoomFixture.kt",
+      "legacy_blob": "3bfbba19e43ee79145177c83dd0c2e0f67723f1c",
+      "current_blob": "3bfbba19e43ee79145177c83dd0c2e0f67723f1c",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/roomdetails/impl/src/test/kotlin/io/element/android/features/roomdetails/impl/members/RoomMemberListPresenterTest.kt",
+      "legacy_blob": "cc64b964d640dadf04272633c93340b60df36e20",
+      "current_blob": "cc64b964d640dadf04272633c93340b60df36e20",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/roomdirectory/impl/src/main/kotlin/io/element/android/features/roomdirectory/impl/root/RoomDirectoryPresenter.kt",
+      "legacy_blob": "6d1fe94fb5cd550bbfe6fe374dbaed98f11f97dc",
+      "current_blob": "6d1fe94fb5cd550bbfe6fe374dbaed98f11f97dc",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/securebackup/impl/src/main/kotlin/io/element/android/features/securebackup/impl/reset/ResetIdentityFlowManager.kt",
+      "legacy_blob": "d92eb577d0f9c1498add9c70adabda3aacbb2e8b",
+      "current_blob": "d5564f31095216710aa902e50f957c4f1f08bd60",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "features/securebackup/impl/src/main/kotlin/io/element/android/features/securebackup/impl/reset/ResetIdentityFlowNode.kt",
+      "legacy_blob": "e0d057244f415398accccfa5b2bb86bac9b212f5",
+      "current_blob": "e0d057244f415398accccfa5b2bb86bac9b212f5",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/securebackup/impl/src/main/kotlin/io/element/android/features/securebackup/impl/reset/password/ResetIdentityPasswordNode.kt",
+      "legacy_blob": "86f9e35fa660307868c414d71268a1bc240f13b1",
+      "current_blob": "86f9e35fa660307868c414d71268a1bc240f13b1",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/securebackup/impl/src/main/kotlin/io/element/android/features/securebackup/impl/reset/password/ResetIdentityPasswordPresenter.kt",
+      "legacy_blob": "1f1bbbbcb8000309c7ef4b4630a8b95849024ae0",
+      "current_blob": "583cb57af8af23e255c0f14ec0b64f00998058ce",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "features/securebackup/impl/src/test/kotlin/io/element/android/features/securebackup/impl/reset/ResetIdentityFlowManagerTest.kt",
+      "legacy_blob": "5d235e45da2a4b52f47baa132a3bf402618577b1",
+      "current_blob": "5d235e45da2a4b52f47baa132a3bf402618577b1",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/securebackup/impl/src/test/kotlin/io/element/android/features/securebackup/impl/reset/password/ResetIdentityPasswordPresenterTest.kt",
+      "legacy_blob": "8f1264900f91adcee9259c8d56ef352e8a2e2b95",
+      "current_blob": "8f1264900f91adcee9259c8d56ef352e8a2e2b95",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/startchat/impl/src/main/kotlin/io/element/android/features/startchat/impl/root/StartChatView.kt",
+      "legacy_blob": "a9882d3fc35a54500674dce4ae1b4949dbad71ee",
+      "current_blob": "23a4b47c20bc7398bfc0f9bb9aa37d49e3b9ea0b",
+      "disposition": "adapted",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/userprofile/api/src/main/kotlin/io/element/android/features/userprofile/api/UserProfileState.kt",
+      "legacy_blob": "65c79fc81e06d9360e90556a01293ae3c310219a",
+      "current_blob": "65c79fc81e06d9360e90556a01293ae3c310219a",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/userprofile/impl/src/main/kotlin/io/element/android/features/userprofile/impl/root/UserProfilePresenter.kt",
+      "legacy_blob": "6f8bd1a6886ea1dfd73418b14ad541996c6f3ec6",
+      "current_blob": "052fa145743b3a6e27484393866cb4d75234c363",
+      "disposition": "adapted",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/userprofile/impl/src/test/kotlin/io/element/android/features/userprofile/impl/UserProfilePresenterTest.kt",
+      "legacy_blob": "4cdbfad98dc4bb3a188ef3c6d238dea30f0f527a",
+      "current_blob": "4cdbfad98dc4bb3a188ef3c6d238dea30f0f527a",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/userprofile/shared/src/main/kotlin/io/element/android/features/userprofile/shared/UserProfileHeaderSection.kt",
+      "legacy_blob": "2ed90c0e21ce4a65fc03f4610b696574bfb076c0",
+      "current_blob": "2ed90c0e21ce4a65fc03f4610b696574bfb076c0",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "features/userprofile/shared/src/main/kotlin/io/element/android/features/userprofile/shared/UserProfileView.kt",
+      "legacy_blob": "8e750b4ef31580ea293c37fd473ae33b86779588",
+      "current_blob": "8e750b4ef31580ea293c37fd473ae33b86779588",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/architecture/src/main/kotlin/io/element/android/libraries/architecture/animation/ScreenTransition.kt",
+      "legacy_blob": "01c05371e893595e389e63c72b37d99e047db7d4",
+      "current_blob": "01c05371e893595e389e63c72b37d99e047db7d4",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/architecture/src/main/kotlin/io/element/android/libraries/architecture/appyx/FaderOrSliderTransitionHandler.kt",
+      "legacy_blob": "a0bd847c846330ad281d588d927b5031f9c65ddc",
+      "current_blob": "a0bd847c846330ad281d588d927b5031f9c65ddc",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/compound/src/main/kotlin/io/element/android/compound/tokens/generated/SemanticColorsDark.kt",
+      "legacy_blob": "694df9142ab7b85ad29796db07816e12e1517bfa",
+      "current_blob": "694df9142ab7b85ad29796db07816e12e1517bfa",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/compound/src/main/kotlin/io/element/android/compound/tokens/generated/SemanticColorsDarkHc.kt",
+      "legacy_blob": "0c049ce4ced48440d9f1a5f91fe3589945542aaf",
+      "current_blob": "0c049ce4ced48440d9f1a5f91fe3589945542aaf",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/compound/src/main/kotlin/io/element/android/compound/tokens/generated/SemanticColorsLight.kt",
+      "legacy_blob": "77165f28c8e8ff67fe1ba1273d895a68dbdff98a",
+      "current_blob": "77165f28c8e8ff67fe1ba1273d895a68dbdff98a",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/compound/src/main/kotlin/io/element/android/compound/tokens/generated/SemanticColorsLightHc.kt",
+      "legacy_blob": "b939a8708c0423db81715cd94347bd2bb9f45d94",
+      "current_blob": "b939a8708c0423db81715cd94347bd2bb9f45d94",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/designsystem/src/main/kotlin/io/element/android/libraries/designsystem/components/avatar/internal/AvatarThumbnail.kt",
+      "legacy_blob": "1d5672c95c9aea2357ed178f6b936668b8daf958",
+      "current_blob": "1d5672c95c9aea2357ed178f6b936668b8daf958",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/designsystem/src/main/kotlin/io/element/android/libraries/designsystem/components/avatar/internal/ImageAvatar.kt",
+      "legacy_blob": "269fda85530fe93ef9577e88da3ee6a139b2766f",
+      "current_blob": "269fda85530fe93ef9577e88da3ee6a139b2766f",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/designsystem/src/main/kotlin/io/element/android/libraries/designsystem/theme/ColorAliases.kt",
+      "legacy_blob": "89402d755fe229d829231b3cc52d02c7c9d6c97f",
+      "current_blob": "89402d755fe229d829231b3cc52d02c7c9d6c97f",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/designsystem/src/main/kotlin/io/element/android/libraries/designsystem/theme/components/ModalBottomSheet.kt",
+      "legacy_blob": "40ec11a8c8a3d4709ac700db746417d8a2ee3940",
+      "current_blob": "40ec11a8c8a3d4709ac700db746417d8a2ee3940",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/designsystem/src/main/res/drawable/ic_notification.xml",
+      "legacy_blob": "75283067c860d88e50d1066396fa249a6f6cce84",
+      "current_blob": "75283067c860d88e50d1066396fa249a6f6cce84",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/designsystem/src/test/kotlin/io/element/android/libraries/designsystem/components/avatar/internal/AvatarThumbnailTest.kt",
+      "legacy_blob": "f89aaf797fb6002a451f9b42ebdd74b3023afa29",
+      "current_blob": "f89aaf797fb6002a451f9b42ebdd74b3023afa29",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/featureflag/api/src/main/kotlin/io/element/android/libraries/featureflag/api/FeatureFlags.kt",
+      "legacy_blob": "985527f449aa078d173459a16985c5d3bbe0ee0b",
+      "current_blob": "985527f449aa078d173459a16985c5d3bbe0ee0b",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/matrix/api/build.gradle.kts",
+      "legacy_blob": "5947aa15af52e159d802137e0ac27a427e95f548",
+      "current_blob": "5947aa15af52e159d802137e0ac27a427e95f548",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/matrix/api/src/main/kotlin/io/element/android/libraries/matrix/api/MatrixClient.kt",
+      "legacy_blob": "cb32ad09db4ee6f44cf528b3ebe624aad5519471",
+      "current_blob": "f00ebbbeffc94a673396e163efa7bece6cc8c327",
+      "disposition": "adapted",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/matrix/api/src/main/kotlin/io/element/android/libraries/matrix/api/auth/OAuthConfig.kt",
+      "legacy_blob": "4e07e89c2fb38da83998aeea7db448a617842798",
+      "current_blob": "4e07e89c2fb38da83998aeea7db448a617842798",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/matrix/api/src/main/kotlin/io/element/android/libraries/matrix/api/diagnostics/DecryptionDiagnostics.kt",
+      "legacy_blob": "b3e8d5e27c763a2bf374b0d86b03fd02658fc877",
+      "current_blob": null,
+      "disposition": "retained-upstream",
+      "reason": "Legacy change adds optional internal diagnostic capture/export; preserve upstream behaviour without those diagnostic hooks."
+    },
+    {
+      "path": "libraries/matrix/api/src/main/kotlin/io/element/android/libraries/matrix/api/diagnostics/StartupTrace.kt",
+      "legacy_blob": "504bbda5677e65cbb87c3282c2e9abc0fcdf58eb",
+      "current_blob": null,
+      "disposition": "retained-upstream",
+      "reason": "Legacy change adds optional internal diagnostic capture/export; preserve upstream behaviour without those diagnostic hooks."
+    },
+    {
+      "path": "libraries/matrix/api/src/main/kotlin/io/element/android/libraries/matrix/api/diagnostics/SyncMeDiagnosticsControl.kt",
+      "legacy_blob": "cecede630fa64e6a83470a9a55159059f19c0356",
+      "current_blob": null,
+      "disposition": "retained-upstream",
+      "reason": "Legacy change adds optional internal diagnostic capture/export; preserve upstream behaviour without those diagnostic hooks."
+    },
+    {
+      "path": "libraries/matrix/api/src/main/kotlin/io/element/android/libraries/matrix/api/diagnostics/TlsAudit.kt",
+      "legacy_blob": "adb6c532b5131f497eb8e2fc4d9143db0594d057",
+      "current_blob": null,
+      "disposition": "retained-upstream",
+      "reason": "Legacy change adds optional internal diagnostic capture/export; preserve upstream behaviour without those diagnostic hooks."
+    },
+    {
+      "path": "libraries/matrix/api/src/main/kotlin/io/element/android/libraries/matrix/api/user/SyncMeAppVisibility.kt",
+      "legacy_blob": "78731ee8f0f05fc186869c1e78e1a4cde0570a7f",
+      "current_blob": "b9062e0b17b876edbf7971f6d19019e801f1c319",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "libraries/matrix/api/src/main/kotlin/io/element/android/libraries/matrix/api/user/UserPresence.kt",
+      "legacy_blob": "a73fb568405d8a1c684acd75d6a88a15b1aeac88",
+      "current_blob": "9f7d666e15ade10997042001cb51deb480c063ec",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "libraries/matrix/api/src/test/kotlin/io/element/android/libraries/matrix/api/user/OnlineMemberCountTest.kt",
+      "legacy_blob": "67ec358a22ab69ee7e0edeabe88c69503590f275",
+      "current_blob": "c83c197f53ec5149a24d6459a9f15d0e6ac2ce4a",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "libraries/matrix/api/src/test/kotlin/io/element/android/libraries/matrix/api/user/UserPresenceTest.kt",
+      "legacy_blob": "fa8ad7b2bdb02f61a964e42e5c7f973c5954781b",
+      "current_blob": "a8435b346c7ee5778c3fb990db30fe1c951385bb",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "libraries/matrix/impl/build.gradle.kts",
+      "legacy_blob": "415c6cd71554bc0c00f8f05614b836900b18ad7f",
+      "current_blob": "bd267b93e7b10224deb76e5735b438174f56ea8e",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "libraries/matrix/impl/src/main/kotlin/io/element/android/libraries/matrix/impl/ClientBuilderProvider.kt",
+      "legacy_blob": "045089854234b5aabd93e3f9cb4612f2570c7872",
+      "current_blob": "f3cf4ffaf2e605e56d7557e6161997553e659194",
+      "disposition": "retained-upstream",
+      "reason": "Legacy change adds optional internal diagnostic capture/export; preserve upstream behaviour without those diagnostic hooks."
+    },
+    {
+      "path": "libraries/matrix/impl/src/main/kotlin/io/element/android/libraries/matrix/impl/RustHomeserverCapabilitiesProvider.kt",
+      "legacy_blob": "e74b35cf4fa589b619ff6d8712d7e6c2e86daf02",
+      "current_blob": "e74b35cf4fa589b619ff6d8712d7e6c2e86daf02",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/matrix/impl/src/main/kotlin/io/element/android/libraries/matrix/impl/RustMatrixClient.kt",
+      "legacy_blob": "0db0a0712557417384442691289802eea8d8ac0a",
+      "current_blob": "339ecd4ed1b874ad991938f2ff6021c70823ca8d",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "libraries/matrix/impl/src/main/kotlin/io/element/android/libraries/matrix/impl/RustMatrixClientFactory.kt",
+      "legacy_blob": "8c53a26d0f0a3d038ff2453390ec3deb5ef0ed73",
+      "current_blob": "b39274e06ca8ebd40976799fdda55691aed81649",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "libraries/matrix/impl/src/main/kotlin/io/element/android/libraries/matrix/impl/analytics/UtdTracker.kt",
+      "legacy_blob": "1b3414e8f32a01e5a34b1f9131cd02cdfdd8a393",
+      "current_blob": "8d71ad3ce8b3f4ffc88d9324ba6328dfb1e4b31c",
+      "disposition": "retained-upstream",
+      "reason": "Legacy change adds optional internal diagnostic capture/export; preserve upstream behaviour without those diagnostic hooks."
+    },
+    {
+      "path": "libraries/matrix/impl/src/main/kotlin/io/element/android/libraries/matrix/impl/encryption/RustEncryptionService.kt",
+      "legacy_blob": "4d4383e20ebfd69d73a48e6ab11ed2585250c47b",
+      "current_blob": "74f235f9f82dc207b7d8edda4dd49f46cd5dad2f",
+      "disposition": "retained-upstream",
+      "reason": "Legacy change adds optional internal diagnostic capture/export; preserve upstream behaviour without those diagnostic hooks."
+    },
+    {
+      "path": "libraries/matrix/impl/src/main/kotlin/io/element/android/libraries/matrix/impl/encryption/RustIdentityResetHandle.kt",
+      "legacy_blob": "3a350bcf5ca887b1721fc732fb145d2ea816693e",
+      "current_blob": "7ee9c7d0b30dbdc1681c33fe286a58178f694fed",
+      "disposition": "retained-upstream",
+      "reason": "Legacy change adds optional internal diagnostic capture/export; preserve upstream behaviour without those diagnostic hooks."
+    },
+    {
+      "path": "libraries/matrix/impl/src/main/kotlin/io/element/android/libraries/matrix/impl/sync/RustSyncService.kt",
+      "legacy_blob": "4a4d2f7b21e315547bef9b178ae067ca469c6080",
+      "current_blob": "f7732cd9b790dd1bb531e93b7f697ce83c483e7d",
+      "disposition": "retained-upstream",
+      "reason": "Legacy change adds optional internal diagnostic capture/export; preserve upstream behaviour without those diagnostic hooks."
+    },
+    {
+      "path": "libraries/matrix/impl/src/main/kotlin/io/element/android/libraries/matrix/impl/timeline/RustTimeline.kt",
+      "legacy_blob": "b8a747397ae2b161aee6ed3b4640b83200918bb4",
+      "current_blob": "c6a737e156e8ded237eb9c4feaed05b9bafd2269",
+      "disposition": "retained-upstream",
+      "reason": "Legacy change adds optional internal diagnostic capture/export; preserve upstream behaviour without those diagnostic hooks."
+    },
+    {
+      "path": "libraries/matrix/impl/src/main/kotlin/io/element/android/libraries/matrix/impl/timeline/item/event/EventTimelineItemMapper.kt",
+      "legacy_blob": "a70e8641e094ad1aac9ab3a5f8b534a67aaa038f",
+      "current_blob": "f77e690ebf8d1d08fc11b1dbd75817ce2c501189",
+      "disposition": "retained-upstream",
+      "reason": "Legacy change adds optional internal diagnostic capture/export; preserve upstream behaviour without those diagnostic hooks."
+    },
+    {
+      "path": "libraries/matrix/impl/src/main/kotlin/io/element/android/libraries/matrix/impl/user/RustPresenceService.kt",
+      "legacy_blob": "c3fdc70f4f607a9dbadea6e621f05b888c89c68c",
+      "current_blob": "e326c544185157e8adb9276a62eea037eeb0efcf",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "libraries/matrix/impl/src/test/kotlin/io/element/android/libraries/matrix/impl/RustMatrixClientFactoryTest.kt",
+      "legacy_blob": "2d2141328cc913358df2f00c887b6bf85b3bb6cb",
+      "current_blob": "2d2141328cc913358df2f00c887b6bf85b3bb6cb",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/matrix/impl/src/test/kotlin/io/element/android/libraries/matrix/impl/auth/OAuthConfigurationProviderTest.kt",
+      "legacy_blob": "731f055439a1a87b12c32ec5a4441f3f05ab7215",
+      "current_blob": "731f055439a1a87b12c32ec5a4441f3f05ab7215",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/matrix/impl/src/test/kotlin/io/element/android/libraries/matrix/impl/diagnostics/DecryptionDiagnosticsTest.kt",
+      "legacy_blob": "db6d4ade7e7f20129d3d177f6d0b040b6c12159c",
+      "current_blob": null,
+      "disposition": "retained-upstream",
+      "reason": "Legacy change adds optional internal diagnostic capture/export; preserve upstream behaviour without those diagnostic hooks."
+    },
+    {
+      "path": "libraries/matrix/impl/src/test/kotlin/io/element/android/libraries/matrix/impl/fixtures/fakes/FakeFfiClient.kt",
+      "legacy_blob": "e558542ac37229f005292d6b48d0eab756df9c04",
+      "current_blob": "e558542ac37229f005292d6b48d0eab756df9c04",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/matrix/impl/src/test/kotlin/io/element/android/libraries/matrix/impl/fixtures/fakes/FakeFfiClientBuilder.kt",
+      "legacy_blob": "4dfa4ec3858113e2e09b9e15487a8ec30cc334cc",
+      "current_blob": "4dfa4ec3858113e2e09b9e15487a8ec30cc334cc",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/matrix/impl/src/test/kotlin/io/element/android/libraries/matrix/impl/user/PresenceFromJsonTest.kt",
+      "legacy_blob": "3b94c6f70543041efd70c03e574a74513efa0bad",
+      "current_blob": "aa561347667baeb6a13e07738b81a1cffcb19fdf",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "libraries/matrix/impl/src/test/kotlin/io/element/android/libraries/matrix/impl/user/RustPresenceServiceTest.kt",
+      "legacy_blob": "de67e05237ee0bb96897e27296b5127e64cba0f7",
+      "current_blob": "24dcb4017e477ad04ee7966cb84eb52ea6edf8b0",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "libraries/matrix/test/src/main/kotlin/io/element/android/libraries/matrix/test/FakeMatrixClient.kt",
+      "legacy_blob": "9053e7f9c5c7d38f1808b8a5ce5abc038b393aae",
+      "current_blob": "9053e7f9c5c7d38f1808b8a5ce5abc038b393aae",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/matrixui/src/main/kotlin/io/element/android/libraries/matrix/ui/components/MatrixUserRow.kt",
+      "legacy_blob": "a648f50ad3b68cf6ae64bf0ee32f0384e0a8cfa5",
+      "current_blob": "766121c0f4d67768d713b363b3017660ad26b147",
+      "disposition": "adapted",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/matrixui/src/main/kotlin/io/element/android/libraries/matrix/ui/components/UserRow.kt",
+      "legacy_blob": "08b905fc6c1a2206877ba954de5c84ea002f9da7",
+      "current_blob": "24b0292ca7bedcfa54ad1fec35fb302c11df5259",
+      "disposition": "adapted",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/matrixui/src/main/kotlin/io/element/android/libraries/matrix/ui/presence/Presence.kt",
+      "legacy_blob": "ec950dedb4e4b22182983ddbd9f59e78646a07f1",
+      "current_blob": "167a2c5eb1e0c031219f7fd09959d3200adbc002",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "libraries/matrixui/src/main/kotlin/io/element/android/libraries/matrix/ui/presence/PresenceSubscription.kt",
+      "legacy_blob": "1269575e4d94777d5f1232570ec95daca660ff35",
+      "current_blob": "abf2400a0f754cff53a8aab2fb6b67018b280e22",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "libraries/matrixui/src/main/kotlin/io/element/android/libraries/matrix/ui/room/MatrixRoomMembers.kt",
+      "legacy_blob": "b1e6847e4b1a735febd0205bfea29323877c13a0",
+      "current_blob": "b1e6847e4b1a735febd0205bfea29323877c13a0",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/matrixui/src/test/kotlin/io/element/android/libraries/matrix/ui/presence/PresenceSubscriptionTest.kt",
+      "legacy_blob": "2770e41dba197910dd664bf1ca305aa0c72af6f7",
+      "current_blob": "71429a7d24a36c47c96aa74cc16b82a4691bac30",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "libraries/mediaupload/impl/src/main/kotlin/io/element/android/libraries/mediaupload/impl/AndroidMediaPreProcessor.kt",
+      "legacy_blob": "07d5cd81f2e05177504afc368f2bd8ed327f6155",
+      "current_blob": "b259bf0568d2f6293eda9918f4eae5aeb5092b09",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "libraries/mediaviewer/impl/src/main/kotlin/io/element/android/libraries/mediaviewer/impl/local/video/MediaVideoView.kt",
+      "legacy_blob": "5d94003977a6222b69e6b91dea182506df861d7d",
+      "current_blob": "4c853add2bd71e615525ab79c5bf74fed18221e9",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "libraries/mediaviewer/impl/src/main/kotlin/io/element/android/libraries/mediaviewer/impl/util/Colors.kt",
+      "legacy_blob": "993c6f0b8b7b1e5c286d1897cd37ed0d4b613f55",
+      "current_blob": "993c6f0b8b7b1e5c286d1897cd37ed0d4b613f55",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/mediaviewer/impl/src/main/kotlin/io/element/android/libraries/mediaviewer/impl/viewer/MediaViewerView.kt",
+      "legacy_blob": "1c6501fc34d3c4746d98af1cd20f9b2f9668a876",
+      "current_blob": "1c6501fc34d3c4746d98af1cd20f9b2f9668a876",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/network/src/main/kotlin/io/element/android/libraries/network/di/NetworkBindingContainer.kt",
+      "legacy_blob": "ef5ed6f40c6e9ff8e9e4e4a8eec29e2f17070d52",
+      "current_blob": "46f00a6b9b618be0f41e797749e571667c9c0a91",
+      "disposition": "retained-upstream",
+      "reason": "Legacy change adds optional internal diagnostic capture/export; preserve upstream behaviour without those diagnostic hooks."
+    },
+    {
+      "path": "libraries/preferences/api/src/main/kotlin/io/element/android/libraries/preferences/api/store/AppPreferencesStore.kt",
+      "legacy_blob": "2581d4c9d721dc24391b6c650dd6a5ccf8f88067",
+      "current_blob": "2581d4c9d721dc24391b6c650dd6a5ccf8f88067",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/preferences/impl/src/main/kotlin/io/element/android/libraries/preferences/impl/store/DefaultAppPreferencesStore.kt",
+      "legacy_blob": "d8d03583d33e92fb59ecd9f29071e0e28dd0b66a",
+      "current_blob": "fddd80db6b48f8e5a1a8acf29e0967a11fd422bd",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "libraries/preferences/impl/src/test/kotlin/io/element/android/libraries/preferences/impl/store/DefaultAppPreferencesStoreTest.kt",
+      "legacy_blob": "712411494dad770cbb6aee917d721b49ec0888f6",
+      "current_blob": "c9a3eba24208cd64aa238a651d9fc05c30ced452",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "libraries/preferences/test/src/main/kotlin/io/element/android/libraries/preferences/test/InMemoryAppPreferencesStore.kt",
+      "legacy_blob": "72ade60ff8052aa8ebe2756d3d98390d4ce9bf02",
+      "current_blob": "d262a9865b0fee6e364b9fc9aed9bf1f69890a2d",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "libraries/pushproviders/firebase/src/main/kotlin/io/element/android/libraries/pushproviders/firebase/FirebasePushProvider.kt",
+      "legacy_blob": "9e3da1816b79a85ad71147583348c79635b82016",
+      "current_blob": "9e3da1816b79a85ad71147583348c79635b82016",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/pushproviders/firebase/src/test/kotlin/io/element/android/libraries/pushproviders/firebase/FirebasePushProviderTest.kt",
+      "legacy_blob": "1cabc0e7cb72c8c032398a789f20bc82117ad7f9",
+      "current_blob": "1cabc0e7cb72c8c032398a789f20bc82117ad7f9",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/pushproviders/firebase/src/test/kotlin/io/element/android/libraries/pushproviders/firebase/InMemoryFirebaseStore.kt",
+      "legacy_blob": "922a990a48a9532aa82f654ff97520cf4659753e",
+      "current_blob": "922a990a48a9532aa82f654ff97520cf4659753e",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/pushproviders/firebase/src/test/kotlin/io/element/android/libraries/pushproviders/firebase/troubleshoot/FirebaseTokenTestTest.kt",
+      "legacy_blob": "9b029d76c7d2538f9d5da2bba02f9a9f6d43f53e",
+      "current_blob": "9b029d76c7d2538f9d5da2bba02f9a9f6d43f53e",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "libraries/rustls-tls/LICENSE-APACHE",
+      "legacy_blob": "261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64",
+      "current_blob": null,
+      "disposition": "retained-upstream",
+      "reason": "Keep the pinned upstream TLS verifier and its revocation transport configuration; the legacy replacement removes an additional revocation checker."
+    },
+    {
+      "path": "libraries/rustls-tls/LICENSE-MIT",
+      "legacy_blob": "9964122648c6348a3c8e61d6d46a87d5942d036c",
+      "current_blob": null,
+      "disposition": "retained-upstream",
+      "reason": "Keep the pinned upstream TLS verifier and its revocation transport configuration; the legacy replacement removes an additional revocation checker."
+    },
+    {
+      "path": "libraries/rustls-tls/README.md",
+      "legacy_blob": "b97a2fe452363b4e7f85e5c014ae7919ac0c8c99",
+      "current_blob": null,
+      "disposition": "retained-upstream",
+      "reason": "Keep the pinned upstream TLS verifier and its revocation transport configuration; the legacy replacement removes an additional revocation checker."
+    },
+    {
+      "path": "libraries/rustls-tls/build.gradle.kts",
+      "legacy_blob": "417d3159e45d1d9bd0f5ea924d2249f54ca48501",
+      "current_blob": null,
+      "disposition": "retained-upstream",
+      "reason": "Keep the pinned upstream TLS verifier and its revocation transport configuration; the legacy replacement removes an additional revocation checker."
+    },
+    {
+      "path": "libraries/rustls-tls/consumer-rules.pro",
+      "legacy_blob": "7c0d2422c20fff500c7876cf3fc85153b9dd88be",
+      "current_blob": null,
+      "disposition": "retained-upstream",
+      "reason": "Keep the pinned upstream TLS verifier and its revocation transport configuration; the legacy replacement removes an additional revocation checker."
+    },
+    {
+      "path": "libraries/rustls-tls/src/main/kotlin/org/rustls/platformverifier/CertificateVerifier.kt",
+      "legacy_blob": "d600c62196370d6092cd4bcdf702d655f4859d98",
+      "current_blob": null,
+      "disposition": "retained-upstream",
+      "reason": "Keep the pinned upstream TLS verifier and its revocation transport configuration; the legacy replacement removes an additional revocation checker."
+    },
+    {
+      "path": "libraries/rustls-tls/src/test/kotlin/org/rustls/platformverifier/CertificateVerifierTest.kt",
+      "legacy_blob": "5ec80ed76f6afb682b6c89dc2bf01b74327b8b27",
+      "current_blob": null,
+      "disposition": "retained-upstream",
+      "reason": "Keep the pinned upstream TLS verifier and its revocation transport configuration; the legacy replacement removes an additional revocation checker."
+    },
+    {
+      "path": "libraries/rustls-tls/src/test/resources/server.pem",
+      "legacy_blob": "97261e44c3dcd3b8c442201e5c4defeb8dc3598d",
+      "current_blob": null,
+      "disposition": "retained-upstream",
+      "reason": "Keep the pinned upstream TLS verifier and its revocation transport configuration; the legacy replacement removes an additional revocation checker."
+    },
+    {
+      "path": "libraries/textcomposer/impl/src/main/kotlin/io/element/android/libraries/textcomposer/TextComposer.kt",
+      "legacy_blob": "97b4d1eec99345f816e27e8824defb9d340b75e8",
+      "current_blob": "8dd1e7e5d7a8a28a58aad23763f245b3060a11d7",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "libraries/ui-strings/src/main/res/values/temporary.xml",
+      "legacy_blob": "418eb079245a3dd7edc94600c2160e4d1f4fa3a8",
+      "current_blob": "ea7872d0e384b735712fce101047dd4fc0134a7c",
+      "disposition": "adapted",
+      "reason": "Reviewed legacy feature port with project formatting and integration adjustments."
+    },
+    {
+      "path": "libraries/usersearch/impl/src/main/kotlin/io/element/android/libraries/usersearch/impl/MatrixUserRepository.kt",
+      "legacy_blob": "51c3cbe8d7aa5d20c94022ce79a9c57704b4e53a",
+      "current_blob": "51c3cbe8d7aa5d20c94022ce79a9c57704b4e53a",
+      "disposition": "ported",
+      "reason": "Matches the selected legacy source blob."
+    },
+    {
+      "path": "plugins/src/main/kotlin/config/BuildTimeConfig.kt",
+      "legacy_blob": "a2d04e34e53eccc564e90bc5b94ac03931074674",
+      "current_blob": "8ddccc0d84df226e7b664d53904c6279b4c27491",
+      "disposition": "adapted",
+      "reason": "Keep the approved independent SyncMe installation identity, distinguish test builds, and use monotonic SyncMe versioning."
+    }
+  ]
+}
