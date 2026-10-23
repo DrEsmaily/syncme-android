@@ -8,11 +8,16 @@
 package io.element.android.features.login.impl.accountprovider
 
 import java.net.URI
+import java.net.URISyntaxException
 
 /** Controls automatic suggestions only; manually entered servers remain supported. */
 internal fun isAutomaticServerSuggestionAllowed(server: String): Boolean {
     val value = server.trim()
-    val uri = runCatching { URI(if ("://" in value) value else "https://$value") }.getOrNull()
-    val host = uri?.host?.trimEnd('.') ?: return false
+    val uri = try {
+        URI(if ("://" in value) value else "https://$value")
+    } catch (_: URISyntaxException) {
+        return false
+    }
+    val host = uri.host?.trimEnd('.') ?: return false
     return !host.substringAfterLast('.').equals("ir", ignoreCase = true)
 }
