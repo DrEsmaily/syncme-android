@@ -1,0 +1,72 @@
+name: Restore legacy LFS snapshot
+on:
+  pull_request:
+    branches: [main]
+    paths: [.github/workflows/restore-lfs.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  restore:
+    name: Restore and verify snapshot assets
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'pull_request' &&
+       github.event.pull_request.head.repo.full_name == github.repository &&
+       github.event.pull_request.user.login == github.repository_owner)
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          lfs: false
+          persist-credentials: true
+      - name: Fetch the exact public legacy snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          legacy_sha=345864b15f2b8b6ca41728a50a280bd5efa81f39
+          source_dir="$RUNNER_TEMP/syncme-legacy-lfs"
+          git init "$source_dir"
+          git -C "$source_dir" remote add legacy https://github.com/DrEsmaily/Syncme.git
+          GIT_LFS_SKIP_SMUDGE=1 git -C "$source_dir" fetch --no-tags legacy "$legacy_sha"
+          GIT_LFS_SKIP_SMUDGE=1 git -C "$source_dir" checkout --detach FETCH_HEAD
+          git -C "$source_dir" -c lfs.concurrenttransfers=4 lfs fetch legacy HEAD
+          git -C "$source_dir" lfs fsck --objects HEAD
+      - name: Copy and push the current snapshot objects
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$(git rev-parse --git-path lfs/objects)"
+          cp -a "$RUNNER_TEMP/syncme-legacy-lfs/.git/lfs/objects/." "$(git rev-parse --git-path lfs/objects)/"
+          git lfs fsck --objects HEAD
+          git lfs ls-files -l | cut -d ' ' -f 1 | sort -u > "$RUNNER_TEMP/syncme-lfs-objects.txt"
+          xargs -n 100 git -c lfs.concurrenttransfers=4 lfs push --object-id origin < "$RUNNER_TEMP/syncme-lfs-objects.txt"
+      - name: Verify downloads from a fresh repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          verify_dir="$RUNNER_TEMP/syncme-lfs-verify"
+          GIT_LFS_SKIP_SMUDGE=1 git clone --no-checkout --depth 1 "https://github.com/$GITHUB_REPOSITORY.git" "$verify_dir"
+          git -C "$verify_dir" -c lfs.concurrenttransfers=4 lfs fetch origin HEAD
+          git -C "$verify_dir" lfs fsck --objects HEAD
+          echo 'Current snapshot LFS objects were downloaded and verified from the destination repository.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Preserve original legacy commit history under an archive tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          legacy_sha=345864b15f2b8b6ca41728a50a280bd5efa81f39
+          tag=legacy/syncme-build-259
+          if git ls-remote --exit-code origin "refs/tags/$tag" > "$RUNNER_TEMP/legacy-tag-ref.txt"; then
+            git fetch origin "refs/tags/$tag:refs/tags/$tag"
+            test "$(git rev-parse "$tag^{commit}")" = "$legacy_sha"
+          else
+            GIT_LFS_SKIP_SMUDGE=1 git fetch "$RUNNER_TEMP/syncme-legacy-lfs" "$legacy_sha"
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+              tag -a "$tag" "$legacy_sha" -m 'Original verified SyncMe build 259 source; retained for provenance, not the active application.'
+            # Current LFS objects were explicitly pushed and verified above.
+            GIT_LFS_SKIP_PUSH=1 git push origin "refs/tags/$tag"
+          fi
+          printf 'Original legacy history preserved at %s/tree/%s\n' "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" "$tag" >> "$GITHUB_STEP_SUMMARY"
