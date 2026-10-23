@@ -26,6 +26,7 @@ import io.element.android.libraries.workmanager.api.WorkManagerRequestType
 import io.element.android.libraries.workmanager.api.WorkManagerRequestWrapper
 import io.element.android.libraries.workmanager.api.WorkManagerWorkerType
 import io.element.android.libraries.workmanager.api.workManagerTag
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.first
 import timber.log.Timber
 import kotlin.time.Duration.Companion.hours
@@ -77,7 +78,7 @@ class DefaultSearchBackfillRequestBuilder(
 
         val request = PeriodicWorkRequestBuilder<SearchBackfillWorker>(1.hours.toJavaDuration())
             // Add a delay before the first execution to avoid running the backfill immediately after the app starts
-            .setInitialDelay(5.minutes.toJavaDuration())
+            .setInitialDelay(5.minutes.inWholeMilliseconds, TimeUnit.MILLISECONDS)
             .setInputData(workDataOf(SESSION_ID_PARAM to sessionId.value))
             .addTag(tag)
             .setConstraints(constraints)
