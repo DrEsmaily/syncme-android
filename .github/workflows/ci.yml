@@ -48,11 +48,27 @@ jobs:
           path: '**/build/reports/'
           retention-days: 14
           if-no-files-found: ignore
+      - name: Verify test APK identity and record provenance
+        if: matrix.check == 'build'
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk=app/build/outputs/apk/gplay/debug/app-gplay-universal-debug.apk
+          tools_dir="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)"
+          mkdir -p build/provenance
+          "$tools_dir/aapt" dump badging "$apk" > build/provenance/manifest.txt
+          grep -F "package: name='com.github.dresmaily.syncme.debug'" build/provenance/manifest.txt
+          "$tools_dir/apksigner" verify --verbose --print-certs "$apk" > build/provenance/signature.txt
+          sha256sum "$apk" > build/provenance/SHA256SUMS
+          git rev-parse HEAD > build/provenance/commit.txt
+          printf '%s\n' "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > build/provenance/ci-run.txt
       - name: Upload test APK
         if: matrix.check == 'build'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
           name: test-apk-${{ github.sha }}
-          path: app/build/outputs/apk/gplay/debug/*-universal-debug.apk
+          path: |
+            app/build/outputs/apk/gplay/debug/*-universal-debug.apk
+            build/provenance/
           retention-days: 14
           if-no-files-found: error
