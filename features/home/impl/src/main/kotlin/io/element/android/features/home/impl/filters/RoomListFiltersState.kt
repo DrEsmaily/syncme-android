@@ -9,14 +9,21 @@
 package io.element.android.features.home.impl.filters
 
 import io.element.android.features.home.impl.filters.selection.FilterSelectionState
+import io.element.android.libraries.preferences.api.store.CustomRoomTag
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 
 data class RoomListFiltersState(
     val filterSelectionStates: ImmutableList<FilterSelectionState>,
+    val customTags: ImmutableList<CustomRoomTag>,
+    val activeCustomTagIds: Set<String>,
     val eventSink: (RoomListFiltersEvent) -> Unit,
 ) {
-    val hasAnyFilterSelected = filterSelectionStates.any { it.isSelected }
+    val hasAnyFilterSelected = filterSelectionStates.any { it.isSelected } || activeCustomTagIds.isNotEmpty()
+
+    fun selectedCustomTags(): List<CustomRoomTag> {
+        return customTags.filter { it.id in activeCustomTagIds }
+    }
 
     fun selectedFilters(): ImmutableList<RoomListFilter> {
         return filterSelectionStates
