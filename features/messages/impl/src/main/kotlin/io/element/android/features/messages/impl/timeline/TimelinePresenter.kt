@@ -20,6 +20,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
@@ -80,6 +82,8 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import timber.log.Timber
 
@@ -138,10 +142,13 @@ class TimelinePresenter(
         }
 
         val localScope = rememberCoroutineScope()
+        val lifecycle = LocalLifecycleOwner.current.lifecycle
 
         val timelineMode = remember { timelineController.mainTimelineMode() }
 
         val lastReadReceiptId = rememberSaveable { mutableStateOf<EventId?>(null) }
+        val lastReadReceiptType = remember { mutableStateOf<ReceiptType?>(null) }
+        val readReceiptMutex = remember { Mutex() }
 
         val roomInfo by room.roomInfoFlow.collectAsState()
 
@@ -150,12 +157,32 @@ class TimelinePresenter(
         val newEventState = remember { mutableStateOf<NewEventState>(NewEventState.None) }
         val messageShieldDialogData: MutableState<MessageShieldData?> = remember { mutableStateOf(null) }
         var sendFailureDialogState by remember { mutableStateOf<SendFailureDialogState>(SendFailureDialogState.Hidden) }
-
         // Forces [JumpToUnreadState.Hidden] until the next RoomInfo push. Set after a
         // [TimelineEvent.MarkAllAsRead] await completes so the FAB hides without waiting for
         // the SDK to push a refreshed fully-read marker; the after-await ordering means any
         // RoomInfo update racing the mark-as-read call has already landed and can't undo this.
         val suppressJumpToUnread = remember { mutableStateOf(false) }
+        val locallyReadThrough = remember { mutableStateOf<UniqueId?>(null) }
+
+        // Read upload progress directly from the timeline local-send state produced by
+        // matrix-sdk-ui. Avoid a second send-queue subscription here: the extra observer duplicated
+        // high-frequency progress events and could interfere with upload throughput on large files.
+        val mediaUploadProgress = remember(timelineItems) {
+            timelineItems.asSequence()
+                .filterIsInstance<TimelineItem.Event>()
+                .mapNotNull { item ->
+                    val transactionId = item.transactionId ?: return@mapNotNull null
+                    val state = item.localSendState as? LocalEventSendState.Sending.MediaWithProgress
+                        ?: return@mapNotNull null
+                    val total = state.total
+                    if (total <= 0L) return@mapNotNull null
+                    val fraction = (state.progress.toDouble() / total.toDouble())
+                        .toFloat()
+                        .coerceIn(0f, 1f)
+                    transactionId to fraction
+                }
+                .toMap()
+        }
 
         val resolveVerifiedUserSendFailureState = resolveVerifiedUserSendFailurePresenter.present()
         val isLive by remember {
@@ -191,21 +218,31 @@ class TimelinePresenter(
                     }
                 }
                 is TimelineEvent.OnScrollFinished -> {
-                    if (isLive) {
+                    if (isLive && lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) {
                         if (event.firstIndex == 0) {
                             newEventState.value = NewEventState.None
                         }
                         Timber.tag(tag).d("## sendReadReceiptIfNeeded firstVisibleIndex: ${event.firstIndex}")
-                        sessionCoroutineScope.launch {
+                        val visibleItems = timelineItems
+                        localScope.launch {
                             val sendPublicReadReceipts = sessionPreferencesStore.isSendPublicReadReceiptsEnabled().first()
                             sendReadReceiptIfNeeded(
                                 firstVisibleIndex = event.firstIndex,
-                                timelineItems = timelineItems,
+                                timelineItems = visibleItems,
+                                lifecycle = lifecycle,
                                 lastReadReceiptId = lastReadReceiptId,
+                                lastReadReceiptType = lastReadReceiptType,
+                                readReceiptMutex = readReceiptMutex,
                                 readReceiptType = if (sendPublicReadReceipts) ReceiptType.READ else ReceiptType.READ_PRIVATE,
+                                onLiveEndRead = { readId ->
+                                    // An older request completing late must not replace a newer read acknowledgement.
+                                    if (timelineItems.firstOrNull { it is TimelineItem.Event }?.identifier() == readId) {
+                                        locallyReadThrough.value = readId
+                                    }
+                                },
                             )
                         }
-                    } else {
+                    } else if (!isLive) {
                         newEventState.value = NewEventState.None
                     }
                 }
@@ -391,8 +428,12 @@ class TimelinePresenter(
             roomInfo.fullyReadEventId,
             roomInfo.numUnreadMessages,
             suppressJumpToUnread.value,
+            locallyReadThrough.value,
         ) {
-            if (!displayJumpToUnread || suppressJumpToUnread.value) {
+            val newestEventId = timelineItems.firstOrNull { it is TimelineItem.Event }?.identifier()
+            val caughtUpLocally = newestEventId != null && newestEventId == locallyReadThrough.value
+            val unreadNavigationDisabled = !displayJumpToUnread || suppressJumpToUnread.value
+            if (unreadNavigationDisabled || caughtUpLocally || roomInfo.numUnreadMessages == 0L) {
                 jumpToUnread.value = JumpToUnreadState.Hidden
                 return@LaunchedEffect
             }
@@ -478,6 +519,7 @@ class TimelinePresenter(
             displayJumpToUnread = displayJumpToUnread,
             jumpToUnread = jumpToUnread.value,
             useNewTimelineEventRenderer = useNewTimelineEventRenderer,
+            mediaUploadProgress = mediaUploadProgress.toMap(),
             eventSink = ::handleEvent,
         )
     }
@@ -566,22 +608,31 @@ class TimelinePresenter(
     private fun CoroutineScope.sendReadReceiptIfNeeded(
         firstVisibleIndex: Int,
         timelineItems: ImmutableList<TimelineItem>,
+        lifecycle: Lifecycle,
         lastReadReceiptId: MutableState<EventId?>,
+        lastReadReceiptType: MutableState<ReceiptType?>,
+        readReceiptMutex: Mutex,
         readReceiptType: ReceiptType,
+        onLiveEndRead: (UniqueId) -> Unit,
     ) = launch(dispatchers.computation) {
-        // If we are at the bottom of timeline, we mark the room as read.
-        if (firstVisibleIndex == 0) {
-            timelineController.invokeOnCurrentTimeline {
-                markAsRead(receiptType = readReceiptType)
-            }
-        } else {
-            // Get last valid EventId seen by the user, as the first index might refer to a Virtual item
-            val eventId = getLastEventIdBeforeOrAt(firstVisibleIndex, timelineItems)
-            if (eventId != null && eventId != lastReadReceiptId.value) {
-                lastReadReceiptId.value = eventId
+        readReceiptMutex.withLock {
+            // A retained chat can still receive timeline updates while hidden. Check again
+            // after suspension / waiting for the previous request, not just in the event sink.
+            if (!lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) return@withLock
+            val eventId = getLastEventIdBeforeOrAt(firstVisibleIndex, timelineItems) ?: return@withLock
+            val newestEventId = timelineItems.firstOrNull { it is TimelineItem.Event }?.identifier()
+            // Never mark the SDK's live end: it may already contain a newer, unrendered event.
+            if (eventId != lastReadReceiptId.value || readReceiptType != lastReadReceiptType.value) {
                 timelineController.invokeOnCurrentTimeline {
-                    sendReadReceipt(eventId = eventId, receiptType = readReceiptType)
+                    sendReadReceipt(eventId = eventId, receiptType = readReceiptType).onSuccess {
+                        lastReadReceiptId.value = eventId
+                        lastReadReceiptType.value = readReceiptType
+                    }
                 }
+            }
+            val receiptConfirmed = eventId == lastReadReceiptId.value && readReceiptType == lastReadReceiptType.value
+            if (receiptConfirmed && firstVisibleIndex == 0 && newestEventId != null) {
+                onLiveEndRead(newestEventId)
             }
         }
     }

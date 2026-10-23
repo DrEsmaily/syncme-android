@@ -8,7 +8,9 @@
 
 package io.element.android.features.messages.impl.timeline
 
+import androidx.lifecycle.Lifecycle
 import app.cash.turbine.ReceiveTurbine
+import app.cash.turbine.TurbineTestContext
 import com.google.common.truth.Truth.assertThat
 import io.element.android.features.location.test.FakeActiveLiveLocationShareManager
 import io.element.android.features.messages.impl.FakeMessagesNavigator
@@ -79,6 +81,7 @@ import io.element.android.libraries.matrix.ui.components.aMatrixUserList
 import io.element.android.libraries.preferences.test.InMemorySessionPreferencesStore
 import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.services.analytics.test.FakeAnalyticsService
+import io.element.android.tests.testutils.FakeLifecycleOwner
 import io.element.android.tests.testutils.WarmUpRule
 import io.element.android.tests.testutils.awaitLastSequentialItem
 import io.element.android.tests.testutils.consumeItemsUntilPredicate
@@ -88,8 +91,8 @@ import io.element.android.tests.testutils.lambda.assert
 import io.element.android.tests.testutils.lambda.lambdaError
 import io.element.android.tests.testutils.lambda.lambdaRecorder
 import io.element.android.tests.testutils.lambda.value
-import io.element.android.tests.testutils.test
 import io.element.android.tests.testutils.testCoroutineDispatchers
+import io.element.android.tests.testutils.testWithLifecycleOwner
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
@@ -173,7 +176,7 @@ class TimelinePresenterTest {
         val timeline = FakeTimeline(
             timelineItems = flowOf(
                 listOf(
-                    MatrixTimelineItem.Event(A_UNIQUE_ID, anEventTimelineItem())
+                    MatrixTimelineItem.Event(A_UNIQUE_ID, anEventTimelineItem(content = aMessageContent()))
                 )
             ),
             markAsReadResult = markAsReadResult,
@@ -189,12 +192,13 @@ class TimelinePresenterTest {
             sessionPreferencesStore = sessionPreferencesStore,
         )
         presenter.test {
-            val initialState = awaitFirstItem()
+            val initialState = consumeItemsUntilPredicate { it.timelineItems.isNotEmpty() }.last()
             initialState.eventSink.invoke(TimelineEvent.OnScrollFinished(0))
             runCurrent()
-            assert(markAsReadResult)
+            assert(markAsReadResult).isNeverCalled()
+            assert(sendReadReceiptLambda)
                 .isCalledOnce()
-                .with(value(expectedReceiptType))
+                .with(value(AN_EVENT_ID), value(expectedReceiptType))
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -252,7 +256,6 @@ class TimelinePresenterTest {
                     )
                 )
             ),
-            markAsReadResult = { Result.success(Unit) },
             sendReadReceiptLambda = sendReadReceiptsLambda,
         )
         val sessionPreferencesStore = InMemorySessionPreferencesStore(isSendPublicReadReceiptsEnabled = false)
@@ -263,7 +266,6 @@ class TimelinePresenterTest {
         presenter.test {
             skipItems(1)
             awaitItem().run {
-                eventSink.invoke(TimelineEvent.OnScrollFinished(0))
                 eventSink.invoke(TimelineEvent.OnScrollFinished(1))
             }
             advanceUntilIdle()
@@ -309,6 +311,37 @@ class TimelinePresenterTest {
     }
 
     @Test
+    fun `failed receipt is retried for the same visible event`() = runTest {
+        var attempts = 0
+        val timeline = FakeTimeline(
+            timelineItems = flowOf(
+                listOf(
+                    MatrixTimelineItem.Event(A_UNIQUE_ID, anEventTimelineItem(content = aMessageContent("first"))),
+                    MatrixTimelineItem.Event(A_UNIQUE_ID_2, anEventTimelineItem(eventId = AN_EVENT_ID_2, content = aMessageContent("second"))),
+                )
+            ),
+            sendReadReceiptLambda = { _, _ ->
+                attempts++
+                if (attempts == 1) Result.failure(IllegalStateException("offline")) else Result.success(Unit)
+            },
+        )
+        createTimelinePresenter(timeline).test {
+            skipItems(1)
+            val state = awaitItem()
+            state.eventSink(TimelineEvent.OnScrollFinished(1))
+            advanceUntilIdle()
+            assertThat(attempts).isEqualTo(1)
+            state.eventSink(TimelineEvent.OnScrollFinished(1))
+            advanceUntilIdle()
+            assertThat(attempts).isEqualTo(2)
+            state.eventSink(TimelineEvent.OnScrollFinished(1))
+            advanceUntilIdle()
+            assertThat(attempts).isEqualTo(2)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun `present - on scroll finished will not send read receipt only virtual events exist before the index`() = runTest {
         val sendReadReceiptsLambda = lambdaRecorder { _: EventId, _: ReceiptType ->
             Result.success(Unit)
@@ -338,7 +371,7 @@ class TimelinePresenterTest {
         val timelineItems = MutableStateFlow(emptyList<MatrixTimelineItem>())
         val timeline = FakeTimeline(
             timelineItems = timelineItems,
-            markAsReadResult = { Result.success(Unit) },
+            sendReadReceiptLambda = { _, _ -> Result.success(Unit) },
         )
         val presenter = createTimelinePresenter(timeline)
         presenter.test {
@@ -389,6 +422,10 @@ class TimelinePresenterTest {
         val timeline = FakeTimeline(timelineItems = timelineItems)
         val presenter = createTimelinePresenter(
             timeline = timeline,
+            room = FakeJoinedRoom(liveTimeline = timeline, baseRoom = FakeBaseRoom(
+                roomPermissions = roomPermissions(),
+                initialRoomInfo = aRoomInfo(numUnreadMessages = 1),
+            )),
             featureFlagService = FakeFeatureFlagService(initialState = mapOf(FeatureFlags.JumpToUnread.key to true)),
         )
         presenter.test {
@@ -490,7 +527,7 @@ class TimelinePresenterTest {
         val timelineItems = MutableStateFlow(emptyList<MatrixTimelineItem>())
         val timeline = FakeTimeline(
             timelineItems = timelineItems,
-            markAsReadResult = { Result.success(Unit) },
+            sendReadReceiptLambda = { _, _ -> Result.success(Unit) },
         )
         val presenter = createTimelinePresenter(timeline)
         presenter.test {
@@ -592,7 +629,7 @@ class TimelinePresenterTest {
     }
 
     @Test
-    fun `present - jumpToUnread is InWindow at index 0 when the read marker is the only item`() = runTest {
+    fun `present - jumpToUnread is Hidden when only a stale read marker remains with no unread messages`() = runTest {
         val timelineItems = MutableStateFlow(emptyList<MatrixTimelineItem>())
         val timeline = FakeTimeline(timelineItems = timelineItems)
         val presenter = createTimelinePresenter(
@@ -604,8 +641,8 @@ class TimelinePresenterTest {
             timelineItems.emit(
                 listOf(MatrixTimelineItem.Virtual(UniqueId("read-marker"), VirtualTimelineItem.ReadMarker))
             )
-            consumeItemsUntilPredicate { it.jumpToUnread is JumpToUnreadState.InWindow }.last().also { state ->
-                assertThat(state.jumpToUnread).isEqualTo(JumpToUnreadState.InWindow(index = 0))
+            consumeItemsUntilPredicate { it.timelineItems.size == 1 }.last().also { state ->
+                assertThat(state.jumpToUnread).isEqualTo(JumpToUnreadState.Hidden)
             }
             cancelAndIgnoreRemainingEvents()
         }
@@ -815,7 +852,7 @@ class TimelinePresenterTest {
             liveTimeline = timeline,
             baseRoom = FakeBaseRoom(
                 roomPermissions = roomPermissions(),
-                initialRoomInfo = aRoomInfo(fullyReadEventId = AN_EVENT_ID),
+                initialRoomInfo = aRoomInfo(fullyReadEventId = AN_EVENT_ID, numUnreadMessages = 1),
             ),
         )
         val presenter = createTimelinePresenter(
@@ -1712,6 +1749,8 @@ class TimelinePresenterTest {
                         A_UNIQUE_ID,
                         anEventTimelineItem(
                             sender = A_USER_ID,
+                            isOwn = true,
+                            content = aMessageContent(),
                             receipts = persistentListOf(
                                 Receipt(
                                     userId = A_USER_ID,
@@ -1861,6 +1900,158 @@ class TimelinePresenterTest {
         }
     }
 
+    @Test
+    fun `read success hides stale unread arrow and a later unseen event restores it`() = runTest {
+        val items = MutableStateFlow<List<MatrixTimelineItem>>(listOf(
+            MatrixTimelineItem.Virtual(UniqueId("marker"), VirtualTimelineItem.ReadMarker),
+            MatrixTimelineItem.Event(UniqueId("latest"), anEventTimelineItem(content = aMessageContent())),
+        ))
+        val timeline = FakeTimeline(timelineItems = items, sendReadReceiptLambda = { _, _ -> Result.success(Unit) })
+        val room = FakeJoinedRoom(liveTimeline = timeline, baseRoom = FakeBaseRoom(
+            roomPermissions = roomPermissions(),
+            initialRoomInfo = aRoomInfo(numUnreadMessages = 1),
+        ))
+        val presenter = createTimelinePresenter(
+            timeline = timeline,
+            room = room,
+            featureFlagService = FakeFeatureFlagService(initialState = mapOf(FeatureFlags.JumpToUnread.key to true))
+        )
+        presenter.test {
+            val unread = consumeItemsUntilPredicate { it.jumpToUnread is JumpToUnreadState.InWindow }.last()
+            unread.eventSink(TimelineEvent.OnScrollFinished(0))
+            consumeItemsUntilPredicate { it.jumpToUnread == JumpToUnreadState.Hidden }
+            // The SDK unread count and marker deliberately remain stale. A new, unseen event must still be discoverable.
+            items.value = items.value + MatrixTimelineItem.Event(UniqueId("new-unseen"), anEventTimelineItem(content = aMessageContent()))
+            consumeItemsUntilPredicate { it.jumpToUnread is JumpToUnreadState.InWindow }
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `failed read receipt does not hide a genuine unread arrow`() = runTest {
+        val items = MutableStateFlow<List<MatrixTimelineItem>>(listOf(
+            MatrixTimelineItem.Virtual(UniqueId("marker"), VirtualTimelineItem.ReadMarker),
+            MatrixTimelineItem.Event(UniqueId("latest"), anEventTimelineItem(content = aMessageContent())),
+        ))
+        val timeline = FakeTimeline(timelineItems = items, sendReadReceiptLambda = { _, _ -> Result.failure(IllegalStateException("offline")) })
+        val room = FakeJoinedRoom(liveTimeline = timeline, baseRoom = FakeBaseRoom(
+            roomPermissions = roomPermissions(),
+            initialRoomInfo = aRoomInfo(numUnreadMessages = 1),
+        ))
+        val presenter = createTimelinePresenter(
+            timeline = timeline,
+            room = room,
+            featureFlagService = FakeFeatureFlagService(initialState = mapOf(FeatureFlags.JumpToUnread.key to true))
+        )
+        presenter.test {
+            val unread = consumeItemsUntilPredicate { it.jumpToUnread is JumpToUnreadState.InWindow }.last()
+            unread.eventSink(TimelineEvent.OnScrollFinished(0))
+            advanceUntilIdle()
+            assertThat(consumeItemsUntilTimeout().any { it.jumpToUnread == JumpToUnreadState.Hidden }).isFalse()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `hidden chat cannot send receipts and resumes reading when opened`() = runTest {
+        val lifecycleOwner = FakeLifecycleOwner(Lifecycle.State.RESUMED)
+        val sent = mutableListOf<EventId>()
+        val timeline = FakeTimeline(
+            timelineItems = flowOf(listOf(MatrixTimelineItem.Event(A_UNIQUE_ID, anEventTimelineItem(content = aMessageContent())))),
+            sendReadReceiptLambda = { eventId, _ ->
+                sent.add(eventId)
+                Result.success(Unit)
+            },
+        )
+        createTimelinePresenter(timeline).test(lifecycleOwner) {
+            val state = consumeItemsUntilPredicate { it.timelineItems.isNotEmpty() }.last()
+            // STARTED: obscured / paused screen. CREATED: background or retained back-stack screen.
+            for (hiddenState in listOf(Lifecycle.State.STARTED, Lifecycle.State.CREATED)) {
+                lifecycleOwner.givenState(hiddenState)
+                state.eventSink(TimelineEvent.OnScrollFinished(0))
+                advanceUntilIdle()
+                assertThat(sent).isEmpty()
+            }
+            lifecycleOwner.givenState(Lifecycle.State.RESUMED)
+            state.eventSink(TimelineEvent.OnScrollFinished(0))
+            advanceUntilIdle()
+            assertThat(sent).containsExactly(AN_EVENT_ID)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `leaving the chat before a queued receipt executes prevents the send`() = runTest(StandardTestDispatcher()) {
+        val lifecycleOwner = FakeLifecycleOwner(Lifecycle.State.RESUMED)
+        val sent = mutableListOf<EventId>()
+        val timeline = FakeTimeline(
+            timelineItems = flowOf(listOf(MatrixTimelineItem.Event(A_UNIQUE_ID, anEventTimelineItem(content = aMessageContent())))),
+            sendReadReceiptLambda = { eventId, _ ->
+                sent.add(eventId)
+                Result.success(Unit)
+            },
+        )
+        createTimelinePresenter(timeline).test(lifecycleOwner) {
+            val state = consumeItemsUntilPredicate { it.timelineItems.isNotEmpty() }.last()
+            state.eventSink(TimelineEvent.OnScrollFinished(0))
+            lifecycleOwner.givenState(Lifecycle.State.CREATED)
+            advanceUntilIdle()
+            assertThat(sent).isEmpty()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `delivery of a newer SDK event cannot make a viewport receipt mark the live end as read`() = runTest {
+        val sent = mutableListOf<EventId>()
+        val markAll = lambdaRecorder<ReceiptType, Result<Unit>> { Result.success(Unit) }
+        val timeline = FakeTimeline(
+            timelineItems = flowOf(listOf(MatrixTimelineItem.Event(A_UNIQUE_ID, anEventTimelineItem(content = aMessageContent())))),
+            markAsReadResult = markAll,
+            getLatestEventIdResult = { Result.success(AN_EVENT_ID_2) },
+            sendReadReceiptLambda = { eventId, _ ->
+                sent.add(eventId)
+                Result.success(Unit)
+            },
+        )
+        createTimelinePresenter(timeline).test {
+            val state = consumeItemsUntilPredicate { it.timelineItems.isNotEmpty() }.last()
+            state.eventSink(TimelineEvent.OnScrollFinished(0))
+            advanceUntilIdle()
+            assert(markAll).isNeverCalled()
+            assertThat(sent).containsExactly(AN_EVENT_ID)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun `enabling public receipts does not reuse an acknowledgement sent privately`() = runTest {
+        val sent = mutableListOf<ReceiptType>()
+        val preferences = InMemorySessionPreferencesStore(isSendPublicReadReceiptsEnabled = false)
+        val timeline = FakeTimeline(
+            timelineItems = flowOf(listOf(MatrixTimelineItem.Event(A_UNIQUE_ID, anEventTimelineItem(content = aMessageContent())))),
+            sendReadReceiptLambda = { _, type ->
+                sent.add(type)
+                Result.success(Unit)
+            },
+        )
+        createTimelinePresenter(timeline, sessionPreferencesStore = preferences).test {
+            val state = consumeItemsUntilPredicate { it.timelineItems.isNotEmpty() }.last()
+            state.eventSink(TimelineEvent.OnScrollFinished(0))
+            advanceUntilIdle()
+            preferences.setSendPublicReadReceipts(true)
+            state.eventSink(TimelineEvent.OnScrollFinished(0))
+            advanceUntilIdle()
+            assertThat(sent).containsExactly(ReceiptType.READ_PRIVATE, ReceiptType.READ).inOrder()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    private suspend fun TimelinePresenter.test(
+        lifecycleOwner: FakeLifecycleOwner = FakeLifecycleOwner(Lifecycle.State.RESUMED),
+        validate: suspend TurbineTestContext<TimelineState>.() -> Unit,
+    ) = testWithLifecycleOwner(lifecycleOwner, validate)
+
     private suspend fun <T> ReceiveTurbine<T>.awaitFirstItem(): T {
         return awaitItem()
     }
@@ -1929,7 +2120,8 @@ class TimelinePresenterTest {
         sendPollResponseAction: SendPollResponseAction = FakeSendPollResponseAction(),
         sessionPreferencesStore: InMemorySessionPreferencesStore = InMemorySessionPreferencesStore(),
         timelineItemIndexer: TimelineItemIndexer = TimelineItemIndexer(),
-        featureFlagService: FakeFeatureFlagService = FakeFeatureFlagService(),
+        // Tests of unrelated events start with optional UI flags disabled; dedicated read-marker tests enable the flag explicitly.
+        featureFlagService: FakeFeatureFlagService = FakeFeatureFlagService(initialState = mapOf(FeatureFlags.JumpToUnread.key to false)),
         liveLocationShareManager: FakeActiveLiveLocationShareManager = FakeActiveLiveLocationShareManager(),
         markAsFullyRead: MarkAsFullyRead = FakeMarkAsFullyRead { _, _ -> },
         timelineProtectionPresenter: Presenter<TimelineProtectionState> = { aTimelineProtectionState() },
