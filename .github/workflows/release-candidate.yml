@@ -1,0 +1,104 @@
+name: Signed release candidate
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  checks: read
+concurrency:
+  group: signed-release-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  candidate:
+    name: Build signed candidate
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      SYNCME_RELEASE_KEY_ALIAS: ${{ secrets.SYNCME_RELEASE_KEY_ALIAS }}
+      SYNCME_RELEASE_KEY_PASSWORD: ${{ secrets.SYNCME_RELEASE_KEY_PASSWORD }}
+      SYNCME_RELEASE_STORE_PASSWORD: ${{ secrets.SYNCME_RELEASE_STORE_PASSWORD }}
+      GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=768m -Dfile.encoding=UTF-8
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Require successful CI for this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/commits/$GITHUB_SHA/check-runs?per_page=100" > "$RUNNER_TEMP/ci-checks.json"
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          checks = json.loads((Path(os.environ['RUNNER_TEMP']) / 'ci-checks.json').read_text())['check_runs']
+          for name in ('Verify (build)', 'Verify (unit-tests)', 'Verify (lint)'):
+              matches = [c for c in checks if c['name'] == name and c['app']['id'] == 15368]
+              latest = max(matches, key=lambda c: c['id'], default=None)
+              if not latest or latest['conclusion'] != 'success':
+                  raise SystemExit(f'{name} must succeed on this exact commit before signing')
+          PY
+      - name: Prepare private signing key
+        env:
+          SYNCME_RELEASE_KEYSTORE_BASE64: ${{ secrets.SYNCME_RELEASE_KEYSTORE_BASE64 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in SYNCME_RELEASE_KEYSTORE_BASE64 SYNCME_RELEASE_KEY_ALIAS SYNCME_RELEASE_KEY_PASSWORD SYNCME_RELEASE_STORE_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Configure the repository secret $name before building a signed candidate"
+              exit 1
+            fi
+          done
+          release_key_path="$RUNNER_TEMP/syncme-release.jks"
+          printf 'SYNCME_RELEASE_STORE_FILE=%s\n' "$release_key_path" >> "$GITHUB_ENV"
+          umask 077
+          printf '%s' "$SYNCME_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$release_key_path"
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6
+        with:
+          cache-read-only: true
+      - name: Build production candidate
+        run: ./gradlew :app:assembleGplayRelease --no-configuration-cache --stacktrace --max-workers=2 --no-parallel
+      - name: Verify release identity and provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk=app/build/outputs/apk/gplay/release/app-gplay-universal-release.apk
+          tools_dir="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)"
+          mkdir -p build/release-provenance
+          "$tools_dir/aapt" dump badging "$apk" > build/release-provenance/manifest.txt
+          grep -F "package: name='com.github.dresmaily.syncme'" build/release-provenance/manifest.txt
+          grep -F "application-label:'SyncMe'" build/release-provenance/manifest.txt
+          if grep -q '^application-debuggable' build/release-provenance/manifest.txt; then
+            echo '::error::A release candidate must not be debuggable'
+            exit 1
+          fi
+          "$tools_dir/apksigner" verify --verbose --print-certs "$apk" > build/release-provenance/signature.txt
+          debug_sha="$(keytool -exportcert -keystore app/signature/debug.keystore -storepass android -alias androiddebugkey | sha256sum | cut -d ' ' -f 1)"
+          signer_sha="$(awk -F ': ' '/Signer #1 certificate SHA-256 digest:/{print $2; exit}' build/release-provenance/signature.txt)"
+          if [ -z "$signer_sha" ] || [ "$signer_sha" = "$debug_sha" ]; then
+            echo '::error::A release candidate must use a private production key, not the public debug key'
+            exit 1
+          fi
+          sha256sum "$apk" > build/release-provenance/SHA256SUMS
+          git rev-parse HEAD > build/release-provenance/commit.txt
+          printf '%s\n' "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" > build/release-provenance/ci-run.txt
+      - name: Upload signed candidate
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: signed-candidate-${{ github.sha }}
+          path: |
+            app/build/outputs/apk/gplay/release/*-universal-release.apk
+            build/release-provenance/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Remove private signing material
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP/syncme-release.jks"
+

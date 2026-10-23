@@ -10,6 +10,11 @@ then merge main back into staging if needed. Do not squash promotions between th
 branches, rewrite shared history, or enable a linear-history rule that prevents these merges.
 Delete completed short-lived branches, never staging.
 
+For a stack of dependent PRs, use merge commits so later branches retain their real predecessor
+ancestry. Test every stage, merge from the bottom of the stack, retarget the next PR to staging
+and include the updated base when branch protection requires it. CI also runs on PRs targeting
+temporary predecessor branches. Once the stack is integrated, delete all its temporary branches.
+
 Protect main and staging with PR requirements, required passing CI, resolved conversations,
 and restrictions on force pushes and deletion. Apply the rules to the owner too.
 Activate required check names only after their actual executions are verified.

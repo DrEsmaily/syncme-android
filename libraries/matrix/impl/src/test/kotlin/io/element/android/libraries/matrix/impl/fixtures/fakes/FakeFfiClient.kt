@@ -77,6 +77,7 @@ class FakeFfiClient(
     private val runSearchBackfillResult: (SearchBackfillStrategy) -> TaskHandle = { lambdaError() },
     private val closeResult: () -> Unit = {},
     private val setDelegateResult: (ClientDelegate?) -> Unit = {},
+    private val setMediaRetentionPolicyResult: (MediaRetentionPolicy) -> Unit = {},
 ) : Client(NoHandle) {
     override fun enableSendQueueUploadProgress(enable: Boolean) = Unit
     override fun userId(): String = userId
@@ -147,7 +148,7 @@ class FakeFfiClient(
         return newLoginWithQrCodeHandlerResult()
     }
 
-    override suspend fun setMediaRetentionPolicy(policy: MediaRetentionPolicy) {}
+    override suspend fun setMediaRetentionPolicy(policy: MediaRetentionPolicy) = setMediaRetentionPolicyResult(policy)
 
     override suspend fun getStoreSizes(): StoreSizes {
         return getStoreSizesResult()

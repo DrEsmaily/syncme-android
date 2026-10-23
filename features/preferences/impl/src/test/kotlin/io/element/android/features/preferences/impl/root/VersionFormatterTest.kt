@@ -23,7 +23,7 @@ class VersionFormatterTest {
                 versionCode = 123
             )
         )
-        assertThat(sut.get()).isEqualTo("SyncMe by 0x07c4 • Build versionName")
+        assertThat(sut.get()).isEqualTo("SyncMe by 0x07c4 • versionName (123)")
     }
 
     companion object {
