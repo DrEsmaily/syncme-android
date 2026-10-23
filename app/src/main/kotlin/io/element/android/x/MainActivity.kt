@@ -163,6 +163,16 @@ class MainActivity : NodeActivity() {
      * - a deep link have been clicked
      * - the app is going to background (<- this is strange)
      */
+    override fun onStart() {
+        super.onStart()
+        io.element.android.libraries.matrix.api.user.SyncMeAppVisibility.setForeground(true)
+    }
+
+    override fun onStop() {
+        io.element.android.libraries.matrix.api.user.SyncMeAppVisibility.setForeground(false)
+        super.onStop()
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         Timber.tag(loggerTag.value).d("onNewIntent")

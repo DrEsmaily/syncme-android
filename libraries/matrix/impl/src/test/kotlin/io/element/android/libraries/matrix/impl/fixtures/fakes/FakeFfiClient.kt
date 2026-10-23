@@ -78,6 +78,7 @@ class FakeFfiClient(
     private val closeResult: () -> Unit = {},
     private val setDelegateResult: (ClientDelegate?) -> Unit = {},
 ) : Client(NoHandle) {
+    override fun enableSendQueueUploadProgress(enable: Boolean) = Unit
     override fun userId(): String = userId
     override fun deviceId(): String = deviceId
     override fun homeserver(): String = homeserver
