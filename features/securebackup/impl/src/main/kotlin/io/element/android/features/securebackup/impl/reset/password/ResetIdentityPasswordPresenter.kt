@@ -20,10 +20,12 @@ import io.element.android.libraries.core.coroutine.CoroutineDispatchers
 import io.element.android.libraries.matrix.api.encryption.IdentityPasswordResetHandle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class ResetIdentityPasswordPresenter(
     private val identityPasswordResetHandle: IdentityPasswordResetHandle,
     private val dispatchers: CoroutineDispatchers,
+    private val onResetCompleted: () -> Unit,
 ) : Presenter<ResetIdentityPasswordState> {
     @Composable
     override fun present(): ResetIdentityPasswordState {
@@ -33,7 +35,11 @@ class ResetIdentityPasswordPresenter(
 
         fun handleEvent(event: ResetIdentityPasswordEvent) {
             when (event) {
-                is ResetIdentityPasswordEvent.Reset -> coroutineScope.reset(event.password, resetAction)
+                is ResetIdentityPasswordEvent.Reset -> if (!resetAction.value.isLoading() && !resetAction.value.isSuccess()) {
+                    // Set loading before launching so repeated IME/button events cannot reset twice.
+                    resetAction.value = AsyncAction.Loading
+                    coroutineScope.reset(event.password, resetAction)
+                }
                 ResetIdentityPasswordEvent.DismissError -> resetAction.value = AsyncAction.Uninitialized
             }
         }
@@ -48,5 +54,8 @@ class ResetIdentityPasswordPresenter(
         suspend {
             identityPasswordResetHandle.resetPassword(password).getOrThrow()
         }.runCatchingUpdatingState(action)
+        if (action.value is AsyncAction.Success) {
+            withContext(dispatchers.main) { onResetCompleted() }
+        }
     }
 }

@@ -17,6 +17,7 @@ import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedInject
 import io.element.android.annotations.ContributesNode
 import io.element.android.libraries.architecture.NodeInputs
+import io.element.android.libraries.architecture.callback
 import io.element.android.libraries.architecture.inputs
 import io.element.android.libraries.core.coroutine.CoroutineDispatchers
 import io.element.android.libraries.di.SessionScope
@@ -29,11 +30,16 @@ class ResetIdentityPasswordNode(
     @Assisted plugins: List<Plugin>,
     coroutineDispatchers: CoroutineDispatchers,
 ) : Node(buildContext, plugins = plugins) {
+    interface Callback : Plugin {
+        fun onResetCompleted()
+    }
+
     data class Inputs(val handle: IdentityPasswordResetHandle) : NodeInputs
 
     private val presenter = ResetIdentityPasswordPresenter(
         identityPasswordResetHandle = inputs<Inputs>().handle,
-        dispatchers = coroutineDispatchers
+        dispatchers = coroutineDispatchers,
+        onResetCompleted = { callback<Callback>().onResetCompleted() },
     )
 
     @Composable
