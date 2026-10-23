@@ -11,7 +11,6 @@ package io.element.android.features.securebackup.impl.reset
 import dev.zacsweers.metro.Inject
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.di.annotations.SessionCoroutineScope
-import io.element.android.libraries.matrix.api.encryption.BackupState
 import io.element.android.libraries.matrix.api.encryption.EncryptionService
 import io.element.android.libraries.matrix.api.encryption.IdentityResetHandle
 import kotlinx.coroutines.CoroutineScope
@@ -29,12 +28,19 @@ class ResetIdentityFlowManager(
     private val resetHandleFlow: MutableStateFlow<AsyncData<IdentityResetHandle?>> = MutableStateFlow(AsyncData.Uninitialized)
     val currentHandleFlow: StateFlow<AsyncData<IdentityResetHandle?>> = resetHandleFlow
     private var whenResetIsDoneWaitingJob: Job? = null
+    private val resetCompleted = MutableStateFlow(false)
 
     fun whenResetIsDone(block: () -> Unit) {
+        whenResetIsDoneWaitingJob?.cancel()
         whenResetIsDoneWaitingJob = sessionCoroutineScope.launch {
-            encryptionService.backupStateStateFlow.first { it == BackupState.ENABLED }
+            resetCompleted.first { it }
             block()
         }
+    }
+
+    /** SDK reset success is distinct from backup activation, which may be disabled for this account. */
+    fun onResetCompleted() {
+        resetCompleted.value = true
     }
 
     fun getResetHandle(): StateFlow<AsyncData<IdentityResetHandle?>> {
@@ -47,6 +53,7 @@ class ResetIdentityFlowManager(
                 encryptionService.startIdentityReset()
                     .onSuccess { handle ->
                         resetHandleFlow.value = AsyncData.Success(handle)
+                        if (handle == null) onResetCompleted()
                     }
                     .onFailure {
                         resetHandleFlow.value = AsyncData.Failure(it)
@@ -58,10 +65,10 @@ class ResetIdentityFlowManager(
     }
 
     suspend fun cancel() {
-        currentHandleFlow.value.dataOrNull()?.cancel()
-        resetHandleFlow.value = AsyncData.Uninitialized
-
         whenResetIsDoneWaitingJob?.cancel()
         whenResetIsDoneWaitingJob = null
+        resetCompleted.value = false
+        currentHandleFlow.value.dataOrNull()?.cancel()
+        resetHandleFlow.value = AsyncData.Uninitialized
     }
 }
