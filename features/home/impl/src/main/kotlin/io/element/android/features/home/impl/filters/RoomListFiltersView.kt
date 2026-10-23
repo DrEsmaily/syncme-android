@@ -37,7 +37,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -53,6 +52,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
@@ -66,6 +66,7 @@ import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.Icon
 import io.element.android.libraries.designsystem.theme.components.Text
+import io.element.android.libraries.designsystem.theme.components.TextField
 import io.element.android.libraries.preferences.api.store.CustomRoomTag
 import io.element.android.libraries.testtags.TestTags
 import io.element.android.libraries.testtags.testTag
@@ -314,10 +315,10 @@ private fun SyncMeTagManager(
                     }
                     "create", "rename" -> {
                         androidx.compose.material3.Text(stringResource(R.string.screen_tags_name))
-                        OutlinedTextField(
+                        TextField(
                             value = draft,
                             onValueChange = { draft = it.take(20) },
-                            label = { androidx.compose.material3.Text(stringResource(R.string.screen_tags_name_hint)) },
+                            label = stringResource(R.string.screen_tags_name_hint),
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
                         )
@@ -370,7 +371,7 @@ private fun SyncMeTagManager(
                                 style = MaterialTheme.typography.titleLarge
                             )
                             androidx.compose.material3.Text(
-                                stringResource(R.string.screen_tags_chat_count, selected.roomIds.size),
+                                pluralStringResource(R.plurals.screen_tags_chat_count, selected.roomIds.size, selected.roomIds.size),
                                 modifier = Modifier.align(Alignment.CenterHorizontally),
                                 color = ElementTheme.colors.textSecondary
                             )
