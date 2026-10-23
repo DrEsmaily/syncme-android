@@ -43,5 +43,8 @@
     <string name="screen_tags_cancel">Cancel</string>
     <string name="screen_tags_count">%1$d of 3 tags used</string>
     <string name="screen_tags_name_count">%1$d/20</string>
-    <string name="screen_tags_chat_count">%1$d chats</string>
+    <plurals name="screen_tags_chat_count">
+        <item quantity="one">%1$d chat</item>
+        <item quantity="other">%1$d chats</item>
+    </plurals>
 </resources>
