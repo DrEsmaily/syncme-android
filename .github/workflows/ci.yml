@@ -1,7 +1,6 @@
 name: CI
 on:
   pull_request:
-    branches: [main, staging]
   push:
     branches: [main, staging]
   workflow_dispatch:
