@@ -34,6 +34,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
@@ -81,6 +83,9 @@ class RoomListDataSource(
 
     val roomSummariesFlow: Flow<ImmutableList<RoomListRoomSummary>> = _roomSummariesFlow
 
+    private val mutableVisibleRange = MutableStateFlow(0..20)
+    val visibleRange = mutableVisibleRange.asStateFlow()
+
     val loadingState = roomList.loadingState
 
     fun launchIn(coroutineScope: CoroutineScope): Job {
@@ -97,6 +102,7 @@ class RoomListDataSource(
     }
 
     suspend fun updateVisibleRange(visibleRange: IntRange) = coroutineScope {
+        mutableVisibleRange.value = visibleRange
         launch {
             roomList.updateVisibleRange(visibleRange, PAGINATION_THRESHOLD)
         }

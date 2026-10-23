@@ -8,18 +8,24 @@
 
 package io.element.android.features.home.impl.roomlist
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.dp
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
 import io.element.android.features.home.impl.R
@@ -32,6 +38,7 @@ import io.element.android.libraries.designsystem.theme.components.ListItemStyle
 import io.element.android.libraries.designsystem.theme.components.ModalBottomSheet
 import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.matrix.api.core.RoomId
+import io.element.android.libraries.preferences.api.store.CustomRoomTag
 import io.element.android.libraries.ui.strings.CommonStrings
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -39,17 +46,26 @@ import io.element.android.libraries.ui.strings.CommonStrings
 fun RoomListContextMenu(
     contextMenu: RoomListState.ContextMenu.Shown,
     canReportRoom: Boolean,
+    customTags: List<CustomRoomTag>,
     eventSink: (RoomListEvent.ContextMenuEvent) -> Unit,
     onRoomSettingsClick: (roomId: RoomId) -> Unit,
     onReportRoomClick: (roomId: RoomId) -> Unit
 ) {
     ModalBottomSheet(
+        sheetState = rememberBottomSheetState(
+            initialValue = SheetValue.Hidden,
+            enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
+        ),
         onDismissRequest = { eventSink(RoomListEvent.HideContextMenu) },
         scrollable = false,
     ) {
         RoomListModalBottomSheetContent(
             contextMenu = contextMenu,
             canReportRoom = canReportRoom,
+            customTags = customTags,
+            onToggleTag = { tagId ->
+                eventSink(RoomListEvent.ToggleRoomCustomTag(contextMenu.roomId, tagId))
+            },
             onRoomMarkReadClick = {
                 eventSink(RoomListEvent.HideContextMenu)
                 eventSink(RoomListEvent.MarkAsRead(contextMenu.roomId))
@@ -81,6 +97,8 @@ fun RoomListContextMenu(
 private fun RoomListModalBottomSheetContent(
     contextMenu: RoomListState.ContextMenu.Shown,
     canReportRoom: Boolean,
+    customTags: List<CustomRoomTag>,
+    onToggleTag: (String) -> Unit,
     onRoomSettingsClick: () -> Unit,
     onLeaveRoomClick: () -> Unit,
     onFavoriteChange: (isFavorite: Boolean) -> Unit,
@@ -129,6 +147,15 @@ private fun RoomListModalBottomSheetContent(
                 ),
             )
         }
+        run {
+            ListItem(
+                content = {
+                    Text(
+                        text = stringResource(R.string.screen_tags_custom),
+                        style = ElementTheme.typography.fontBodyMdMedium,
+                    )
+                },
+            )
         val (textResId, icon) = if (contextMenu.isFavorite) {
             CommonStrings.common_favourited to CompoundIcons.FavouriteSolid()
         } else {
@@ -153,6 +180,29 @@ private fun RoomListModalBottomSheetContent(
                 onFavoriteChange(!contextMenu.isFavorite)
             },
         )
+            customTags.forEach { tag ->
+                val checked = contextMenu.roomId.value in tag.roomIds
+                ListItem(
+                    content = {
+                        Text(
+                            text = tag.name,
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    },
+                    leadingContent = ListItemContent.Custom { _ ->
+                        Image(
+                            painter = painterResource(id = R.drawable.syncme_tag_outline),
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    },
+                    trailingContent = ListItemContent.Switch(
+                        checked = checked,
+                    ),
+                    onClick = { onToggleTag(tag.id) },
+                )
+            }
+        }
         ListItem(
             content = {
                 Text(
@@ -204,6 +254,7 @@ internal fun RoomListContextMenuPreview(
     RoomListContextMenu(
         contextMenu = contextMenu,
         canReportRoom = true,
+        customTags = emptyList(),
         onRoomSettingsClick = {},
         onReportRoomClick = {},
         eventSink = {},
