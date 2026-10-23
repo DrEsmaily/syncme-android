@@ -2,7 +2,10 @@
 
 Independent Android Matrix client based on Element X Android.
 
-**Status: repository foundation and migration in progress. No upgrade APK is released from this repository yet.**
+**Status: verified repository foundation; legacy feature migration is in progress. No production release yet.**
+
+Build, unit tests and lint passed in [CI run 39948264813](https://github.com/DrEsmaily/syncme-android/actions/runs/39948264813).
+Test APKs are available in that run’s artifacts. Device testing and production signing remain pending.
 
 ## Development
 

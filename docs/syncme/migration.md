@@ -28,9 +28,21 @@ The inherited shared debug signature is only suitable for test builds.
 
 ## Current validation status
 
-Gradle 9.8.0 starts under JDK 21. CI YAML parses successfully. Android compilation,
-unit tests, lint and device verification are still pending.
+Build, unit tests and lint all passed for integration candidate
+`7d4a6ac0a0bba5b47c6eed17648d08ca27f38dd4` in
+[CI run 39948264813](https://github.com/DrEsmaily/syncme-android/actions/runs/39948264813).
+The resulting staging commit `9ac25cc97197c49bb412563425cdaa3d76e738a3` has exactly the
+same Git tree (`73028c53e805a8d08d05f71cc30afd724ec390fc`) as that tested candidate.
 
-`branch-protection.json` is the planned protection request for main and staging.
-The GitHub integration rejected repository-settings updates with HTTP 403; rules have
-not been applied. The owner has created the new public repository.
+The checks cover APK assembly and identity/signature validation, unit tests (including
+server suggestions), Android lint, ktlint and detekt. They do not establish on-device
+behaviour or production release readiness.
+
+The owner configured protection for both `main` and `staging`; both are confirmed protected.
+`branch-protection.json` records the intended required checks. Enabling those required
+status checks remains an owner-side setting because this integration cannot administer
+branch protection.
+
+The existing Syncme repository remains unchanged. Feature migration, private production
+signing and device acceptance tests remain separate work tracked in
+[issue 3](https://github.com/DrEsmaily/syncme-android/issues/3).
