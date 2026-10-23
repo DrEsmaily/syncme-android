@@ -1,6 +1,6 @@
-# AGENTS.md — Element X Android
+# AGENTS.md — SyncMe Android
 
-> **Repo:** `element-hq/element-x-android` — Android Matrix client (Compose UI + `matrix-rust-sdk`).
+> **Repo:** `DrEsmaily/syncme-android` (derived from Element X Android) — Android Matrix client (Compose UI + `matrix-rust-sdk`).
 
 ---
 
@@ -17,13 +17,13 @@ PRs must meet these rules.
 
 - We use **Timber** for logging. Never use `android.util.Log`.
 - **Never log secrets, passwords, keys, or user content** (e.g. message bodies).
-- Matrix IDs (User IDs, Room IDs, Event IDs) are safe to log.
+- Treat Matrix identifiers as user data; avoid logging them unless necessary and redact diagnostic exports.
 
 ### Strings & Localisation
 
 - Default localisation: `en` (en-GB strings), shared with Element X iOS via [Localazy](https://localazy.com/p/element).
 - **Never edit `localazy.xml`** — it is auto-generated and overwritten.
-- New English strings go in **`temporary.xml`**. The core team imports these to Localazy.
+- New English strings go in **`temporary.xml`**. Keep these separate from upstream-generated translations.
 - **Key naming**:
   - Cross-screen verbs: `action_` (e.g., `action_copy`).
   - Common nouns/other: `common_` (e.g., `common_error`).
@@ -39,21 +39,21 @@ PRs must meet these rules.
 - Use `@PreviewsDayNight` for consistency.
 - Use `PreviewParameterProvider` (e.g., `FooStatePreviewParam`) to provide states. Always add new states to existing providers at the end of the sequence.
 - Wrap previews in `ElementPreview { ... }`.
-- When writing tests, never try to record the screenshots, the CI will do it.
+- Do not regenerate screenshot baselines to hide regressions; document intentional visual changes.
 
 ---
 
 ## Pull Request Guidelines
 
 - Sentence-style titles (no conventional commits).
-- Exactly one `pr-` label (see `.github/release.yml`).
+- Exactly one `PR-` label (see `.github/release.yml`).
 - Title = changelog entry — descriptive, no "Fixes #…".
-- Leave description template for the developer. Redirect them to the [contributing etiquette](CONTRIBUTING.md#etiquette).
+- Fill the PR template with the problem, resulting behaviour, validation and known limitations.
 - Screenshots/videos for visual changes.
 - 500 additions max into production code. Test code can be larger — split large changes.
 - Commits need a title and description; no tiny or massive commits.
 - No history rewrites.
-- When creating a pull request and if changes contain new or update(s) of the Composable Previews, add the label "Record-Screenshots" to the PR so that the CI will record the screenshots.
+- Include screenshots for visual changes. Screenshot recording automation has not yet been configured in this repository.
 
 ---
 
