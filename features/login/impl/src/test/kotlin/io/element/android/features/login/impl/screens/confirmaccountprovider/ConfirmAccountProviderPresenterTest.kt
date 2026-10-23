@@ -329,6 +329,23 @@ class ConfirmAccountProviderPresenterTest {
     }
 
     @Test
+    fun `present - excluded history is not offered as an autocomplete suggestion`() = runTest {
+        val suffix = "ir"
+        val presenter = createConfirmAccountProviderPresenter(
+            appPreferencesStore = InMemoryAppPreferencesStore(
+                homeserverHistory = listOf("https://randomcommunity.$suffix"),
+            ),
+        )
+        presenter.test {
+            val initialState = awaitItem()
+            assertThat(initialState.accountProviderInput).isEqualTo("matrix.org")
+            initialState.eventSink(ConfirmAccountProviderEvent.UserInputChanged("random"))
+            val suggestionState = awaitState { it.accountProviderInput == "random" }
+            assertThat(suggestionState.accountProviderSuggestion).isNull()
+        }
+    }
+
+    @Test
     fun `present - continue accepts the autocomplete suggestion rather than the typed prefix`() = runTest {
         val submittedUrls = mutableListOf<String>()
         val authenticationService = FakeMatrixAuthenticationService(

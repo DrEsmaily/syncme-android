@@ -95,6 +95,19 @@ class AccountProviderDataSourceTest {
     }
 
     @Test
+    fun `present - excluded history does not become the default provider`() = runTest {
+        val suffix = "ir"
+        val sut = anAccountProviderDataSource(
+            appPreferencesStore = InMemoryAppPreferencesStore(
+                homeserverHistory = listOf("https://example.$suffix", "https://example.org"),
+            ),
+        )
+        sut.flow.test {
+            assertThat(awaitItem()).isEqualTo(AccountProvider.Generic("https://example.org"))
+        }
+    }
+
+    @Test
     fun `present - history is ignored when the account provider is enforced`() = runTest {
         val sut = anAccountProviderDataSource(
             enterpriseService = FakeEnterpriseService(
