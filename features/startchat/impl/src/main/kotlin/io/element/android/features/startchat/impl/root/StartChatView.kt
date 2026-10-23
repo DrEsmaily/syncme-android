@@ -60,7 +60,7 @@ fun StartChatView(
     onNewRoomClick: () -> Unit,
     onOpenDM: (RoomId) -> Unit,
     onInviteFriendsClick: () -> Unit,
-    onJoinByAddressClick: () -> Unit,
+    @Suppress("UNUSED_PARAMETER") onJoinByAddressClick: () -> Unit,
     onRoomDirectorySearchClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -164,8 +164,8 @@ private fun CreateRoomRootViewTopBar(
 private fun CreateRoomActionButtonsList(
     state: StartChatState,
     onNewRoomClick: () -> Unit,
-    onInvitePeopleClick: () -> Unit,
-    onJoinByAddressClick: () -> Unit,
+    @Suppress("UNUSED_PARAMETER") onInvitePeopleClick: () -> Unit,
+    @Suppress("UNUSED_PARAMETER") onJoinByAddressClick: () -> Unit,
     onRoomDirectorySearchClick: () -> Unit,
     onDmClick: (RoomId) -> Unit,
 ) {

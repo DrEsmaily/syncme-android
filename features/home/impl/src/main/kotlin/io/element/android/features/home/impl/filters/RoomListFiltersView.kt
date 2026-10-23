@@ -228,7 +228,7 @@ fun RoomListFiltersView(
 
 @Composable
 private fun SyncMeTagManager(
-    tags: List<CustomRoomTag>,
+    tags: kotlinx.collections.immutable.ImmutableList<CustomRoomTag>,
     onDismiss: () -> Unit,
     onCreate: (String, String) -> Unit,
     onRename: (String, String) -> Unit,

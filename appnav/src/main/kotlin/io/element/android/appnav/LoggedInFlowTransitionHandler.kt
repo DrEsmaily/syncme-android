@@ -41,7 +41,7 @@ class LoggedInFlowTransitionHandler(
         // keep their existing slide transition.
         val isRoomTransition = backstack.elements.value.any { element ->
             element.key.navTarget is LoggedInFlowNode.NavTarget.Room &&
-                (element.fromState != element.targetState)
+                element.fromState != element.targetState
         }
         val handler = if (isPlaceholderBeingRemoved || isRoomTransition) fader else slider
         return handler.createModifier(modifier, transition, descriptor)

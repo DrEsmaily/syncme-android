@@ -47,6 +47,7 @@ import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
+import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.withContext
@@ -68,8 +69,8 @@ class RoomMemberListPresenter(
         val roomInfo by room.roomInfoFlow.collectAsState()
         val joinedUsers = membersState.joinedRoomMembers().map { it.userId }.toSet()
         var visibleUsers by remember { mutableStateOf(emptySet<UserId>()) }
-        val presenceStates = matrixClient.observePresence(joinedUsers)
-        matrixClient.observePresence(visibleUsers.intersect(joinedUsers))
+        val presenceStates = matrixClient.observePresence(joinedUsers.toImmutableSet())
+        matrixClient.observePresence(visibleUsers.intersect(joinedUsers).toImmutableSet())
         val canInvite by room.permissionsAsState(false) { perms -> perms.canOwnUserInvite() }
         val roomModerationState = roomMembersModerationPresenter.present()
 

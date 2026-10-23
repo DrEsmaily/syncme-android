@@ -39,8 +39,8 @@ internal fun UserRow(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     verticalSpaceWidth: Dp = 12.dp,
-    trailingContent: @Composable (() -> Unit)? = null,
     presence: UserPresence = UserPresence.Unknown,
+    trailingContent: @Composable (() -> Unit)? = null,
 ) {
     UserRow(
         avatarData = avatarData,
@@ -71,8 +71,8 @@ internal fun UserRow(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     verticalSpaceWidth: Dp = 12.dp,
-    trailingContent: @Composable (() -> Unit)? = null,
     presence: UserPresence = UserPresence.Unknown,
+    trailingContent: @Composable (() -> Unit)? = null,
 ) {
     Row(
         modifier = modifier
