@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="screen_onboarding_syncme_privacy">Stay connected, Stay private</string>
+    <string name="screen_onboarding_syncme_tagline">Messaging made simple</string>
+    <string name="screen_onboarding_syncme_login">Login</string>
+    <string name="screen_onboarding_syncme_credit">by 0x07c4</string>
+</resources>

@@ -7,9 +7,8 @@
 
 package io.element.android.appnav
 
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.Transition
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -37,7 +36,14 @@ class LoggedInFlowTransitionHandler(
             element.key.navTarget == LoggedInFlowNode.NavTarget.Placeholder &&
                 element.targetState != BackStack.State.ACTIVE
         }
-        val handler = if (isPlaceholderBeingRemoved) fader else slider
+        // Use a short fade for room navigation instead of a full-screen slide.
+        // This also covers returning from a room to Home; settings and other screens
+        // keep their existing slide transition.
+        val isRoomTransition = backstack.elements.value.any { element ->
+            element.key.navTarget is LoggedInFlowNode.NavTarget.Room &&
+                element.fromState != element.targetState
+        }
+        val handler = if (isPlaceholderBeingRemoved || isRoomTransition) fader else slider
         return handler.createModifier(modifier, transition, descriptor)
     }
 }
@@ -47,10 +53,11 @@ fun rememberLoggedInFlowTransitionHandler(
     backstack: BackStack<LoggedInFlowNode.NavTarget>,
 ): ModifierTransitionHandler<LoggedInFlowNode.NavTarget, BackStack.State> {
     val slider = rememberBackstackSlider<LoggedInFlowNode.NavTarget>(
-        transitionSpec = { spring(stiffness = Spring.StiffnessMediumLow) },
+        transitionSpec = { tween(durationMillis = 150) },
     )
+    // Room entry/exit should feel immediate; preserve the existing 150ms slide for menus.
     val fader = rememberBackstackFader<LoggedInFlowNode.NavTarget>(
-        transitionSpec = { spring(stiffness = Spring.StiffnessMediumLow) },
+        transitionSpec = { tween(durationMillis = 90) },
     )
     return remember(backstack, slider, fader) {
         LoggedInFlowTransitionHandler(backstack, slider, fader)

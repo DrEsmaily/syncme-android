@@ -19,10 +19,8 @@ import io.element.android.libraries.designsystem.components.list.ListItemContent
 import io.element.android.libraries.designsystem.components.preferences.PreferenceCategory
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
-import io.element.android.libraries.designsystem.theme.components.HorizontalDivider
 import io.element.android.libraries.designsystem.theme.components.IconSource
 import io.element.android.libraries.designsystem.theme.components.ListItem
-import io.element.android.libraries.designsystem.theme.components.ListItemStyle
 import io.element.android.libraries.designsystem.theme.components.Text
 import io.element.android.libraries.ui.strings.CommonStrings
 
@@ -32,11 +30,11 @@ fun PreferencesAccountView(
     onSecureBackupClick: () -> Unit,
     onManageAccountClick: (url: String) -> Unit,
     onLinkNewDeviceClick: () -> Unit,
-    onOpenRageShake: () -> Unit,
+    @Suppress("UNUSED_PARAMETER") onOpenRageShake: () -> Unit,
     onModerationAndSafetyClick: () -> Unit,
     onOpenNotificationSettings: () -> Unit,
-    onSignOutClick: () -> Unit,
-    onDeactivateClick: () -> Unit,
+    @Suppress("UNUSED_PARAMETER") onSignOutClick: () -> Unit,
+    @Suppress("UNUSED_PARAMETER") onDeactivateClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
@@ -50,14 +48,7 @@ fun PreferencesAccountView(
             state = state,
             onOpenNotificationSettings = onOpenNotificationSettings,
             onSecureBackupClick = onSecureBackupClick,
-        )
-        // General section
-        GeneralSection(
-            state = state,
             onModerationAndSafetyClick = onModerationAndSafetyClick,
-            onOpenRageShake = onOpenRageShake,
-            onSignOutClick = onSignOutClick,
-            onDeactivateClick = onDeactivateClick,
         )
     }
 }
@@ -95,6 +86,7 @@ private fun ColumnScope.OtherSettingsSection(
     state: PreferencesAccountState,
     onOpenNotificationSettings: () -> Unit,
     onSecureBackupClick: () -> Unit,
+    onModerationAndSafetyClick: () -> Unit,
 ) {
     ListItem(
         content = { Text(stringResource(id = R.string.screen_notification_settings_title)) },
@@ -105,49 +97,15 @@ private fun ColumnScope.OtherSettingsSection(
         ListItem(
             content = { Text(stringResource(id = CommonStrings.common_encryption)) },
             leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Key())),
-            trailingContent = ListItemContent.Badge.takeIf { state.showSecureBackupBadge },
+            // SyncMe keeps Encryption as a normal settings row without a persistent red dot.
             onClick = onSecureBackupClick,
         )
     }
-}
-
-@Composable
-private fun ColumnScope.GeneralSection(
-    state: PreferencesAccountState,
-    onModerationAndSafetyClick: () -> Unit,
-    onOpenRageShake: () -> Unit,
-    onSignOutClick: () -> Unit,
-    onDeactivateClick: () -> Unit,
-) {
-    HorizontalDivider()
     ListItem(
         content = { Text(stringResource(id = CommonStrings.common_moderation_and_safety)) },
         leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Admin())),
         onClick = onModerationAndSafetyClick,
     )
-
-    if (state.canReportBug) {
-        ListItem(
-            content = { Text(stringResource(id = CommonStrings.common_report_a_problem)) },
-            leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.ChatProblem())),
-            onClick = onOpenRageShake,
-        )
-    }
-    HorizontalDivider()
-    ListItem(
-        content = { Text(stringResource(id = CommonStrings.action_signout)) },
-        leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Close())),
-        style = ListItemStyle.Destructive,
-        onClick = onSignOutClick,
-    )
-    if (state.canDeactivateAccount) {
-        ListItem(
-            content = { Text(stringResource(id = CommonStrings.action_delete_account)) },
-            leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Delete())),
-            style = ListItemStyle.Destructive,
-            onClick = onDeactivateClick,
-        )
-    }
 }
 
 @PreviewsDayNight
