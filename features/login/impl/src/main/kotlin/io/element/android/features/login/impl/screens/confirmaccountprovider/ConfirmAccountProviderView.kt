@@ -173,6 +173,7 @@ fun ConfirmAccountProviderView(
             visualTransformation = ghostTransformation,
             keyboardOptions = KeyboardOptions(
                 keyboardType = KeyboardType.Uri,
+                autoCorrectEnabled = false,
                 imeAction = ImeAction.Done,
             ),
             keyboardActions = KeyboardActions(

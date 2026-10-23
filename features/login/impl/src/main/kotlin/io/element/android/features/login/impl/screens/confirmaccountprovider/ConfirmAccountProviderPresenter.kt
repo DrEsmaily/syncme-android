@@ -22,6 +22,7 @@ import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
 import io.element.android.features.enterprise.api.EnterpriseService
 import io.element.android.features.login.impl.accountprovider.AccountProviderDataSource
+import io.element.android.features.login.impl.accountprovider.isAutomaticServerSuggestionAllowed
 import io.element.android.features.login.impl.changeserver.ChangeServerEvent
 import io.element.android.features.login.impl.changeserver.ChangeServerState
 import io.element.android.features.login.impl.login.LoginModeEvent
@@ -69,6 +70,7 @@ class ConfirmAccountProviderPresenter(
         val autocompleteCandidates = remember(homeserverHistory) {
             (homeserverHistory + enterpriseService.accountProviderAllowList() + matrixOrgAccountProvider)
                 .map { it.friendlyServerName() }
+                .filter(::isAutomaticServerSuggestionAllowed)
                 .distinct()
         }
 
@@ -76,6 +78,7 @@ class ConfirmAccountProviderPresenter(
         // Displayed without the scheme, so the field shows e.g. "matrix.org" rather than "https://matrix.org".
         var userInput by rememberSaveable { mutableStateOf<String?>(null) }
         val accountProviderInput = userInput ?: accountProvider.friendlyServerName()
+            .takeIf(::isAutomaticServerSuggestionAllowed).orEmpty()
 
         // Offer the first candidate that the current input is a (case-insensitive) prefix of.
         val accountProviderSuggestion = remember(accountProviderInput, autocompleteCandidates) {
