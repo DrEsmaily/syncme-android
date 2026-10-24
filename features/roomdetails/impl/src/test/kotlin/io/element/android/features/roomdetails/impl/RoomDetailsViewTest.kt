@@ -15,8 +15,8 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.test.AndroidComposeUiTest
 import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.onAllNodesWithText
-import androidx.compose.ui.test.onLast
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -116,17 +116,9 @@ class RoomDetailsViewTest : RobolectricTest() {
     }
 
     @Test
-    fun `click on invite invokes expected callback`() = runAndroidComposeUiTest {
-        ensureCalledOnce { callback ->
-            setRoomDetailView(
-                state = aRoomDetailsState(
-                    eventSink = EventsRecorder(expectEvents = false),
-                    canInvite = true,
-                ),
-                invitePeople = callback,
-            )
-            clickOn(CommonStrings.action_invite)
-        }
+    fun `room invitation action is hidden`() = runAndroidComposeUiTest {
+        setRoomDetailView(state = aRoomDetailsState(canInvite = true))
+        onAllNodesWithText(activity!!.getString(CommonStrings.action_invite)).assertCountEquals(0)
     }
 
     @Test
@@ -353,21 +345,15 @@ class RoomDetailsViewTest : RobolectricTest() {
 
     @Config(qualifiers = "h1024dp")
     @Test
-    fun `click on invite invokes the expected callback`() = runAndroidComposeUiTest {
-        ensureCalledOnce { callback ->
-            setRoomDetailView(
-                state = aRoomDetailsState(
-                    eventSink = EventsRecorder(expectEvents = false),
-                    roomType = RoomDetailsType.Dm(
-                        aDmRoomMember(userId = UserId("@other:local.org")),
-                    ),
-                    dmOtherMemberDetailsState = aUserProfileState(userId = A_USER_ID),
-                    canInvite = true,
-                ),
-                invitePeople = callback,
-            )
-            onAllNodesWithText(activity!!.getString(R.string.screen_room_details_invite_title)).onLast().performClick()
-        }
+    fun `direct message invitation action is hidden`() = runAndroidComposeUiTest {
+        setRoomDetailView(
+            state = aRoomDetailsState(
+                roomType = RoomDetailsType.Dm(aDmRoomMember(userId = UserId("@other:example.org"))),
+                dmOtherMemberDetailsState = aUserProfileState(userId = A_USER_ID),
+                canInvite = true,
+            ),
+        )
+        onAllNodesWithText(activity!!.getString(R.string.screen_room_details_invite_title)).assertCountEquals(0)
     }
 }
 

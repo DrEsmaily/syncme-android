@@ -179,10 +179,10 @@ class RoomMemberListPresenter(
         activeCallParticipants: ImmutableList<UserId>
     ): RoomMemberWithIdentityState {
         return if (room.info().isEncrypted != true) {
-            RoomMemberWithIdentityState(this, null, userId in activeCallParticipants)
+            RoomMemberWithIdentityState(this, null, userId in activeCallParticipants, UserPresence.Unknown)
         } else {
             val identityState = identityStates[userId] ?: encryptionService.getUserIdentity(userId, fallbackToServer = false).getOrNull()
-            RoomMemberWithIdentityState(this, identityState, userId in activeCallParticipants)
+            RoomMemberWithIdentityState(this, identityState, userId in activeCallParticipants, UserPresence.Unknown)
         }
     }
 
