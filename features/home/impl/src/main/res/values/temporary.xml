@@ -15,4 +15,36 @@
     <string name="search_no_results_title">No results</string>
     <string name="search_no_results_subtitle">There are no results for “%1$s”. Try a new search term.</string>
     <string name="screen_search_recent_searches_section_title">Recent searches</string>
+    <string name="screen_tags_back">Back</string>
+    <string name="screen_tags_create">Create tag</string>
+    <string name="screen_tags_details">Tag details</string>
+    <string name="screen_tags_rename_title">Rename tag</string>
+    <string name="screen_tags_manage">Manage tags</string>
+    <string name="screen_tags_intro">Organize your chats with up to 3 custom tags.</string>
+    <string name="screen_tags_favorite">Favorite</string>
+    <string name="screen_tags_built_in">Built-in</string>
+    <string name="screen_tags_custom">Custom tags</string>
+    <string name="screen_tags_empty">No custom tags yet.</string>
+    <string name="screen_tags_create_new">+ Create new tag</string>
+    <string name="screen_tags_limit">You\'ve reached the 3-tag limit. Delete a tag to create another.</string>
+    <string name="screen_tags_name">Tag name</string>
+    <string name="screen_tags_name_hint">Add tag name</string>
+    <string name="screen_tags_preview">Preview</string>
+    <string name="screen_tags_save">Save</string>
+    <string name="screen_tags_selection_hint">You can create up to 3 custom tags. New tags are not selected automatically.</string>
+    <string name="screen_tags_missing">Tag no longer exists.</string>
+    <string name="screen_tags_rename">Rename</string>
+    <string name="screen_tags_view">View tagged chats</string>
+    <string name="screen_tags_clear">Remove from chats</string>
+    <string name="screen_tags_keep_chats">Keep all conversations</string>
+    <string name="screen_tags_delete">Delete tag</string>
+    <string name="screen_tags_delete_confirm">Delete this tag?</string>
+    <string name="screen_tags_delete_explanation">Chats will remain, only the tag will be removed.</string>
+    <string name="screen_tags_cancel">Cancel</string>
+    <string name="screen_tags_count">%1$d of 3 tags used</string>
+    <string name="screen_tags_name_count">%1$d/20</string>
+    <plurals name="screen_tags_chat_count">
+        <item quantity="one">%1$d chat</item>
+        <item quantity="other">%1$d chats</item>
+    </plurals>
 </resources>

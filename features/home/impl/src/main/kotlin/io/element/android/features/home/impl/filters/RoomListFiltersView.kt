@@ -11,35 +11,53 @@ package io.element.android.features.home.impl.filters
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.zIndex
 import io.element.android.compound.theme.ElementTheme
 import io.element.android.compound.tokens.generated.CompoundIcons
@@ -48,6 +66,8 @@ import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.designsystem.theme.components.Icon
 import io.element.android.libraries.designsystem.theme.components.Text
+import io.element.android.libraries.designsystem.theme.components.TextField
+import io.element.android.libraries.preferences.api.store.CustomRoomTag
 import io.element.android.libraries.testtags.TestTags
 import io.element.android.libraries.testtags.testTag
 
@@ -69,7 +89,10 @@ fun RoomListFiltersView(
 
     var scrollToStart by remember { mutableIntStateOf(0) }
     val lazyListState = rememberLazyListState()
+    var showTagManager by rememberSaveable { mutableStateOf(false) }
+
     LaunchedEffect(scrollToStart) {
+        if (scrollToStart == 0) return@LaunchedEffect
         // Scroll until the first item start to be displayed
         // Since all items have different size, there is no way to compute the amount of
         // pixel to scroll to go directly to the start of the row.
@@ -92,7 +115,14 @@ fun RoomListFiltersView(
             )
         )
     }
+    // Move the selected custom chip into view as the built-in filters do.
+    LaunchedEffect(state.activeCustomTagIds) {
+        if (state.activeCustomTagIds.isNotEmpty()) lazyListState.animateScrollToItem(1)
+    }
     val previousFilters = remember { mutableStateOf(listOf<RoomListFilter>()) }
+    // Put the selected custom tag first among custom chips, just like built-in
+    // filters place the selected chip at the leading edge of their group.
+    val orderedCustomTags = state.customTags.sortedBy { if (it.id in state.activeCustomTagIds) 0 else 1 }
     LazyRow(
         contentPadding = PaddingValues(start = 8.dp, end = 16.dp),
         modifier = modifier.fillMaxWidth(),
@@ -116,6 +146,17 @@ fun RoomListFiltersView(
                 )
             }
         }
+        // Selected tag is a genuinely leading chip, not merely a scrolled trailing chip.
+        orderedCustomTags.filter { it.id in state.activeCustomTagIds }.forEach { tag ->
+            item("custom_tag_${tag.id}") {
+                RoomListCustomTagView(
+                    tag = tag,
+                    selected = true,
+                    modifier = Modifier.animateItem(),
+                    onClick = { state.eventSink(RoomListFiltersEvent.SelectCustomTag(tag.id)) },
+                )
+            }
+        }
         state.filterSelectionStates.forEachIndexed { i, filterWithSelection ->
             item(filterWithSelection.filter) {
                 val zIndex = (if (previousFilters.value.contains(filterWithSelection.filter)) state.filterSelectionStates.size else 0) - i.toFloat()
@@ -128,13 +169,274 @@ fun RoomListFiltersView(
                     onClick = {
                         previousFilters.value = state.selectedFilters()
                         onToggleFilter(it)
-                        // When selecting a filter, we want to scroll to the start of the list
                         if (filterWithSelection.isSelected.not()) {
                             scrollToStart++
                         }
                     },
                 )
             }
+        }
+        orderedCustomTags.filterNot { it.id in state.activeCustomTagIds }.forEach { tag ->
+            item("custom_tag_${tag.id}") {
+                RoomListCustomTagView(
+                    tag = tag,
+                    selected = tag.id in state.activeCustomTagIds,
+                    modifier = Modifier.animateItem(),
+                    onClick = {
+                        state.eventSink(RoomListFiltersEvent.SelectCustomTag(tag.id))
+                        // Scroll this actual chip into the leading position, instead of
+                        // forcing a repeated animated scroll to absolute index zero.
+                    },
+                )
+            }
+        }
+        item("manage_custom_tags") {
+            FilterChip(
+                selected = false,
+                onClick = { showTagManager = true },
+                modifier = Modifier.height(32.dp),
+                shape = CircleShape,
+                label = {
+                    Text(
+                        text = "+",
+                        style = ElementTheme.typography.fontBodyMdRegular,
+                    )
+                },
+                border = FilterChipDefaults.filterChipBorder(
+                    enabled = true,
+                    selected = false,
+                    borderColor = ElementTheme.colors.borderInteractiveSecondary,
+                ),
+            )
+        }
+    }
+
+    if (showTagManager) {
+        SyncMeTagManager(
+            tags = state.customTags,
+            onDismiss = { showTagManager = false },
+            onCreate = { name, icon -> state.eventSink(RoomListFiltersEvent.CreateCustomTag(name, icon)) },
+            onRename = { id, name -> state.eventSink(RoomListFiltersEvent.RenameCustomTag(id, name)) },
+            onClearChats = { state.eventSink(RoomListFiltersEvent.ClearCustomTagChats(it)) },
+            onDelete = { state.eventSink(RoomListFiltersEvent.DeleteCustomTag(it)) },
+            onOpen = { id ->
+                state.eventSink(RoomListFiltersEvent.SelectCustomTag(id))
+                showTagManager = false
+            },
+        )
+    }
+}
+
+@Composable
+private fun SyncMeTagManager(
+    tags: kotlinx.collections.immutable.ImmutableList<CustomRoomTag>,
+    onDismiss: () -> Unit,
+    onCreate: (String, String) -> Unit,
+    onRename: (String, String) -> Unit,
+    onClearChats: (String) -> Unit,
+    onDelete: (String) -> Unit,
+    onOpen: (String) -> Unit,
+) {
+    var page by rememberSaveable { mutableStateOf("manage") }
+    var selectedId by rememberSaveable { mutableStateOf<String?>(null) }
+    var draft by rememberSaveable { mutableStateOf("") }
+    var confirmDelete by rememberSaveable { mutableStateOf(false) }
+    val selected = tags.firstOrNull { it.id == selectedId }
+    val fallbackName = stringResource(R.string.screen_tags_name)
+    val remaining = 3 - tags.size
+    val trimmed = draft.trim()
+    val valid = trimmed.isNotBlank() && trimmed.length <= 20 &&
+        tags.none { it.id != (if (page == "rename") selectedId else null) && it.name.equals(trimmed, ignoreCase = true) }
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+    ) {
+        Surface(color = ElementTheme.colors.bgCanvasDefault, modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier.fillMaxSize().safeDrawingPadding().padding(horizontal = 20.dp, vertical = 26.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = {
+                        if (page == "manage") {
+                            onDismiss()
+                        } else {
+                            page = if (page == "create" || page == "details") "manage" else "details"
+                            confirmDelete = false
+                        }
+                    }) {
+                        Icon(imageVector = CompoundIcons.ArrowLeft(), contentDescription = stringResource(R.string.screen_tags_back))
+                    }
+                    androidx.compose.material3.Text(
+                        text = when (page) {
+                            "create" -> stringResource(R.string.screen_tags_create)
+                            "details" -> stringResource(R.string.screen_tags_details)
+                            "rename" -> stringResource(R.string.screen_tags_rename_title)
+                            else -> stringResource(R.string.screen_tags_manage)
+                        },
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+                }
+                when (page) {
+                    "manage" -> {
+                        androidx.compose.material3.Text(
+                            stringResource(R.string.screen_tags_intro),
+                            color = ElementTheme.colors.textSecondary
+                        )
+                        androidx.compose.material3.Text(stringResource(R.string.screen_tags_favorite), style = MaterialTheme.typography.titleMedium)
+                        TagManagerRow("★", stringResource(R.string.screen_tags_favorite), stringResource(R.string.screen_tags_built_in), { onDismiss() })
+                        HorizontalDivider()
+                        androidx.compose.material3.Text(stringResource(R.string.screen_tags_custom), style = MaterialTheme.typography.titleMedium)
+                        tags.forEach { tag ->
+                            TagManagerRow("TAG", tag.name, "", {
+                                selectedId = tag.id
+                                page = "details"
+                            })
+                        }
+                        if (tags.isEmpty()) androidx.compose.material3.Text(stringResource(R.string.screen_tags_empty))
+                        Spacer(Modifier.weight(1f))
+                        Button(
+                            onClick = {
+                                draft = ""
+                                page = "create"
+                            },
+                            enabled = remaining > 0,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { androidx.compose.material3.Text(stringResource(R.string.screen_tags_create_new)) }
+                        androidx.compose.material3.Text(
+                            if (remaining == 0) {
+                                stringResource(R.string.screen_tags_limit)
+                            } else {
+                                stringResource(R.string.screen_tags_count, tags.size)
+                            },
+                            color = ElementTheme.colors.textSecondary,
+                            modifier = Modifier.align(Alignment.CenterHorizontally),
+                        )
+                    }
+                    "create", "rename" -> {
+                        androidx.compose.material3.Text(stringResource(R.string.screen_tags_name))
+                        TextField(
+                            value = draft,
+                            onValueChange = { draft = it.take(20) },
+                            label = stringResource(R.string.screen_tags_name_hint),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        androidx.compose.material3.Text(
+                            stringResource(R.string.screen_tags_name_count, draft.length),
+                            color = ElementTheme.colors.textSecondary
+                        )
+                        androidx.compose.material3.Text(stringResource(R.string.screen_tags_preview))
+                        TagManagerRow("TAG", draft.ifBlank { fallbackName }, "", {})
+                        Spacer(Modifier.weight(1f))
+                        Button(
+                            onClick = {
+                                if (page == "rename") {
+                                    selectedId?.let { onRename(it, trimmed) }
+                                    page = "details"
+                                } else {
+                                    onCreate(trimmed, "TAG")
+                                    page = "manage"
+                                }
+                            },
+                            enabled = valid && (page == "rename" || remaining > 0),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            androidx.compose.material3.Text(if (page ==
+                            "rename") {
+                                stringResource(R.string.screen_tags_save)
+                            } else {
+                                stringResource(R.string.screen_tags_create)
+                            })
+                        }
+                        androidx.compose.material3.Text(
+                            stringResource(R.string.screen_tags_selection_hint),
+                            color = ElementTheme.colors.textSecondary
+                        )
+                    }
+                    "details" -> {
+                        if (selected == null) {
+                            androidx.compose.material3.Text(stringResource(R.string.screen_tags_missing))
+                            TextButton(onClick = { page = "manage" }) { androidx.compose.material3.Text(stringResource(R.string.screen_tags_back)) }
+                        } else {
+                            Spacer(Modifier.height(10.dp))
+                            Image(
+                                painter = painterResource(id = R.drawable.syncme_tag_outline),
+                                contentDescription = null,
+                                modifier = Modifier.align(Alignment.CenterHorizontally).size(40.dp)
+                            )
+                            androidx.compose.material3.Text(
+                                selected.name,
+                                modifier = Modifier.align(Alignment.CenterHorizontally),
+                                style = MaterialTheme.typography.titleLarge
+                            )
+                            androidx.compose.material3.Text(
+                                pluralStringResource(R.plurals.screen_tags_chat_count, selected.roomIds.size, selected.roomIds.size),
+                                modifier = Modifier.align(Alignment.CenterHorizontally),
+                                color = ElementTheme.colors.textSecondary
+                            )
+                            TagManagerRow("✎", stringResource(R.string.screen_tags_rename), "", {
+                                draft = selected.name
+                                page = "rename"
+                            })
+                            TagManagerRow("✓", stringResource(R.string.screen_tags_view), "", { onOpen(selected.id) })
+                            TagManagerRow("−", stringResource(R.string.screen_tags_clear), stringResource(R.string.screen_tags_keep_chats), {
+                                onClearChats(selected.id)
+                            })
+                            TagManagerRow("✕", stringResource(R.string.screen_tags_delete), "", { confirmDelete = true })
+                            if (confirmDelete) {
+                                Spacer(Modifier.weight(1f))
+                                androidx.compose.material3.Text(
+                                    stringResource(R.string.screen_tags_delete_confirm),
+                                    style = MaterialTheme.typography.titleLarge
+                                )
+                                androidx.compose.material3.Text(stringResource(R.string.screen_tags_delete_explanation))
+                                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    OutlinedButton(onClick = { confirmDelete = false }, modifier = Modifier.weight(1f)) {
+                                        androidx.compose.material3.Text(stringResource(R.string.screen_tags_cancel))
+                                    }
+                                    Button(onClick = {
+                                        onDelete(selected.id)
+                                        selectedId = null
+                                        confirmDelete = false
+                                        page = "manage"
+                                    }, modifier = Modifier.weight(1f)) { androidx.compose.material3.Text(stringResource(R.string.screen_tags_delete)) }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TagManagerRow(symbol: String, title: String, subtitle: String, onClick: () -> Unit) {
+    Surface(
+        color = ElementTheme.colors.bgSubtleSecondary,
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            if (symbol == "TAG") {
+                Image(
+                    painter = painterResource(id = R.drawable.syncme_tag_outline),
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp)
+                )
+            } else {
+                androidx.compose.material3.Text(symbol, style = MaterialTheme.typography.titleLarge)
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                androidx.compose.material3.Text(title)
+                if (subtitle.isNotEmpty()) androidx.compose.material3.Text(subtitle, color = ElementTheme.colors.textSecondary)
+            }
+            // SyncMe 236: no trailing chevron in tag manager rows or previews.
         }
     }
 }
@@ -199,6 +501,54 @@ private fun RoomListFilterView(
         label = {
             Text(
                 text = stringResource(id = roomListFilter.stringResource),
+                style = ElementTheme.typography.fontBodyMdRegular,
+            )
+        },
+        border = FilterChipDefaults.filterChipBorder(
+            enabled = true,
+            selected = selected,
+            borderColor = borderColour.value,
+        ),
+    )
+}
+
+@Composable
+private fun RoomListCustomTagView(
+    tag: CustomRoomTag,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val background = animateColorAsState(
+        targetValue = if (selected) ElementTheme.colors.bgActionPrimaryRest else ElementTheme.colors.bgCanvasDefault,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "custom tag chip background",
+    )
+    val textColour = animateColorAsState(
+        targetValue = if (selected) ElementTheme.colors.textOnSolidPrimary else ElementTheme.colors.textPrimary,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "custom tag chip text",
+    )
+    val borderColour = animateColorAsState(
+        targetValue = if (selected) Color.Transparent else ElementTheme.colors.borderInteractiveSecondary,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "custom tag chip border",
+    )
+
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        modifier = modifier.height(32.dp),
+        shape = CircleShape,
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = background.value,
+            selectedContainerColor = background.value,
+            labelColor = textColour.value,
+            selectedLabelColor = textColour.value,
+        ),
+        label = {
+            Text(
+                text = tag.name,
                 style = ElementTheme.typography.fontBodyMdRegular,
             )
         },

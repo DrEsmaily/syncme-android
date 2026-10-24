@@ -10,6 +10,7 @@ package io.element.android.features.home.impl.filters
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import io.element.android.features.home.impl.filters.selection.FilterSelectionState
+import io.element.android.libraries.preferences.api.store.CustomRoomTag
 import kotlinx.collections.immutable.toImmutableList
 
 class RoomListFiltersStatePreviewParam : PreviewParameterProvider<RoomListFiltersState> {
@@ -19,13 +20,22 @@ class RoomListFiltersStatePreviewParam : PreviewParameterProvider<RoomListFilter
             aRoomListFiltersState(
                 filterSelectionStates = RoomListFilter.entries.map { FilterSelectionState(it, isSelected = true) }
             ),
+            aRoomListFiltersState(activeCustomTagIds = setOf("work", "family")),
         )
 }
 
 fun aRoomListFiltersState(
     filterSelectionStates: List<FilterSelectionState> = RoomListFilter.entries.map { FilterSelectionState(it, isSelected = false) },
+    customTags: List<CustomRoomTag> = listOf(
+        CustomRoomTag(id = "work", name = "Work", roomIds = emptySet()),
+        CustomRoomTag(id = "family", name = "Family", roomIds = emptySet()),
+    ),
+    activeCustomTagId: String? = null,
+    activeCustomTagIds: Set<String> = setOfNotNull(activeCustomTagId),
     eventSink: (RoomListFiltersEvent) -> Unit = {},
 ) = RoomListFiltersState(
     filterSelectionStates = filterSelectionStates.toImmutableList(),
+    customTags = customTags.toImmutableList(),
+    activeCustomTagIds = activeCustomTagIds,
     eventSink = eventSink,
 )
