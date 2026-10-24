@@ -57,7 +57,7 @@ class CloseGroupMembersTest {
     @Test(expected = CancellationException::class)
     fun `cancellation is propagated`() = runTest {
         closeGroupMembers(ready(own, other), own.userId) { throw CancellationException() }
-        Unit
+        assertThat(false).isTrue()
     }
 
     private fun ready(vararg members: io.element.android.libraries.matrix.api.room.RoomMember) =
