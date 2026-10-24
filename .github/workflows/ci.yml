@@ -1,7 +1,6 @@
 name: CI
 on:
   pull_request:
-    branches: [main, staging]
   push:
     branches: [main, staging]
   workflow_dispatch:
@@ -62,6 +61,7 @@ jobs:
           mkdir -p build/provenance
           "$tools_dir/aapt" dump badging "$apk" > build/provenance/manifest.txt
           grep -F "package: name='com.github.dresmaily.syncme.debug'" build/provenance/manifest.txt
+          grep -F "application-label:'SyncMe Test'" build/provenance/manifest.txt
           "$tools_dir/apksigner" verify --verbose --print-certs "$apk" > build/provenance/signature.txt
           sha256sum "$apk" > build/provenance/SHA256SUMS
           git rev-parse HEAD > build/provenance/commit.txt

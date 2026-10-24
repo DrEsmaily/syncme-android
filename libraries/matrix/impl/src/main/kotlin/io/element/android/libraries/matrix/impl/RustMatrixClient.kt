@@ -58,6 +58,8 @@ import io.element.android.libraries.matrix.api.sync.SlidingSyncVersion
 import io.element.android.libraries.matrix.api.sync.SyncState
 import io.element.android.libraries.matrix.api.user.MatrixSearchUserResults
 import io.element.android.libraries.matrix.api.user.MatrixUser
+import io.element.android.libraries.matrix.api.user.SyncMeAppVisibility
+import io.element.android.libraries.matrix.api.user.UserPresence
 import io.element.android.libraries.matrix.api.user.UserStatus
 import io.element.android.libraries.matrix.impl.encryption.RustEncryptionService
 import io.element.android.libraries.matrix.impl.exception.mapClientException
@@ -118,6 +120,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
@@ -197,10 +200,40 @@ class RustMatrixClient(
     override val sessionCoroutineScope = appCoroutineScope.childScope(dispatchers.main, "Session-$sessionId")
     private val sessionDispatcher = dispatchers.io.limitedParallelism(64)
 
+    init {
+        // Matrix Rust SDK disables intermediate send-queue media upload progress by default.
+        // SyncMe needs the actual in-flight values so the UI can render 0..100% in real time.
+        innerClient.enableSendQueueUploadProgress(true)
+    }
+
     private val innerRoomListService = innerSyncService.roomListService()
 
     // TODO refactor this and `innerNotificationClient` to be behind a suspend function instead
     private val innerSpaceService = runBlocking { innerClient.spaceService() }
+
+    private val presenceService by lazy {
+        io.element.android.libraries.matrix.impl.user.RustPresenceService(
+            homeserverUrl,
+            sessionId,
+            sessionStore,
+            syncService.syncState,
+            SyncMeAppVisibility.isForeground,
+            CoroutineScope(sessionCoroutineScope.coroutineContext + dispatchers.io),
+            publishOwnPresence = { value ->
+                innerClient.setPresence(
+                    if (value == "online") {
+                        org.matrix.rustcomponents.sdk.PresenceState.ONLINE
+                    } else {
+                        org.matrix.rustcomponents.sdk.PresenceState.UNAVAILABLE
+                    },
+                    immediate = true,
+                )
+            },
+        )
+    }
+    override val presenceStates: StateFlow<Map<UserId, UserPresence>> get() = presenceService.states
+    override fun trackPresence(userIds: Set<UserId>) = presenceService.track(userIds)
+    override fun releasePresence(userIds: Set<UserId>) = presenceService.release(userIds)
 
     override val roomMembershipObserver = RoomMembershipObserver()
 
@@ -209,6 +242,7 @@ class RustMatrixClient(
         dispatcher = sessionDispatcher,
         sessionCoroutineScope = sessionCoroutineScope
     )
+
     override val pushersService = RustPushersService(
         client = innerClient,
         dispatchers = dispatchers,
@@ -329,7 +363,7 @@ class RustMatrixClient(
     }
 
     override val ignoredUsersFlow = mxCallbackFlow<ImmutableList<UserId>> {
-        // Fetch the initial value manually, the SDK won't return it automatically
+        // Fetch the initial value away from the main thread: the FFI call can perform I/O.
         channel.trySend(innerClient.ignoredUsers().map(::UserId).toImmutableList())
 
         innerClient.subscribeToIgnoredUsers(object : IgnoredUsersListener {
@@ -338,6 +372,7 @@ class RustMatrixClient(
             }
         })
     }
+        .flowOn(sessionDispatcher)
         .buffer(Channel.UNLIMITED)
         .stateIn(sessionCoroutineScope, started = SharingStarted.Eagerly, initialValue = persistentListOf())
 

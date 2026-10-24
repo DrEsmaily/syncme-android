@@ -156,6 +156,16 @@ class MainActivity : NodeActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        io.element.android.libraries.matrix.api.user.SyncMeAppVisibility.setForeground(true)
+    }
+
+    override fun onStop() {
+        io.element.android.libraries.matrix.api.user.SyncMeAppVisibility.setForeground(false)
+        super.onStop()
+    }
+
     /**
      * Called when:
      * - the launcher icon is clicked (if the app is already running);
