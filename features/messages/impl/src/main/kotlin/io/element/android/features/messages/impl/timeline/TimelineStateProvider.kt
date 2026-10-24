@@ -73,6 +73,7 @@ fun aTimelineState(
         FocusRequestState.None
     }
     return TimelineState(
+        mediaUploadProgress = emptyMap(),
         timelineItems = timelineItems,
         timelineMode = timelineMode,
         timelineRoomInfo = timelineRoomInfo,
