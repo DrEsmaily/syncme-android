@@ -18,8 +18,10 @@ import io.element.android.libraries.designsystem.components.avatar.AvatarSize
 import io.element.android.libraries.designsystem.preview.ElementPreview
 import io.element.android.libraries.designsystem.preview.PreviewsDayNight
 import io.element.android.libraries.matrix.api.user.MatrixUser
+import io.element.android.libraries.matrix.api.user.UserPresence
 import io.element.android.libraries.matrix.ui.model.getAvatarData
 import io.element.android.libraries.matrix.ui.model.getBestName
+import io.element.android.libraries.matrix.ui.presence.PresenceStatus
 
 @Composable
 fun MatrixUserRow(
@@ -27,9 +29,11 @@ fun MatrixUserRow(
     modifier: Modifier = Modifier,
     avatarSize: AvatarSize = AvatarSize.UserListItem,
     verticalSpaceWidth: Dp = 12.dp,
+    presence: UserPresence = UserPresence.Unknown,
     trailingContent: @Composable (() -> Unit)? = null,
 ) = UserRow(
     avatarData = matrixUser.getAvatarData(avatarSize),
+    presence = presence,
     nameContent = {
         DisplayNameWithStatus(
             name = matrixUser.getBestName(),
@@ -37,6 +41,7 @@ fun MatrixUserRow(
             nameColor = ElementTheme.colors.textPrimary,
             style = ElementTheme.typography.fontBodyLgRegular,
         )
+        PresenceStatus(presence)
     },
     subtext = if (matrixUser.displayName.isNullOrEmpty()) null else matrixUser.userId.value,
     modifier = modifier,

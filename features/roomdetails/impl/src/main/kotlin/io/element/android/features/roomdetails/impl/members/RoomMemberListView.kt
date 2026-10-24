@@ -29,6 +29,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
@@ -62,6 +66,7 @@ import io.element.android.libraries.matrix.api.room.RoomMember
 import io.element.android.libraries.matrix.api.room.getBestName
 import io.element.android.libraries.matrix.api.room.toMatrixUser
 import io.element.android.libraries.matrix.ui.components.MatrixUserRow
+import io.element.android.libraries.matrix.ui.presence.toPresenceText
 import io.element.android.libraries.ui.strings.CommonStrings
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
@@ -102,6 +107,9 @@ fun RoomMemberListView(
                     .padding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal).asPaddingValues()),
                 placeholder = stringResource(CommonStrings.common_search_for_someone),
             )
+            state.onlineMemberCount.toPresenceText()?.let { label ->
+                Text(text = label, modifier = Modifier.padding(horizontal = 16.dp), color = ElementTheme.colors.textSecondary)
+            }
             RoomMemberList(
                 roomMembersData = state.filteredRoomMembers,
                 selectedSection = state.selectedSection,
@@ -109,6 +117,7 @@ fun RoomMemberListView(
                 searchQuery = state.searchQuery.text.toString(),
                 onSelectedSectionChange = { state.eventSink(RoomMemberListEvent.ChangeSelectedSection(it)) },
                 onSelectUser = ::onSelectUser,
+                onVisibleUsersChange = { state.eventSink(RoomMemberListEvent.VisibleUsersChanged(it)) },
             )
         }
     }
@@ -122,10 +131,20 @@ private fun RoomMemberList(
     searchQuery: String,
     onSelectedSectionChange: (SelectedSection) -> Unit,
     onSelectUser: (RoomMember) -> Unit,
+    onVisibleUsersChange: (Set<UserId>) -> Unit,
 ) {
+    val listState = rememberLazyListState()
+    val onVisibleUsers by rememberUpdatedState(onVisibleUsersChange)
+    LaunchedEffect(listState) {
+        snapshotFlow {
+            listState.layoutInfo.visibleItemsInfo.mapNotNull { item ->
+                (item.key as? String)?.takeIf { it.startsWith('@') && ':' in it }?.let(::UserId)
+            }.toSet()
+        }.collect { onVisibleUsers(it) }
+    }
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
-        state = rememberLazyListState(),
+        state = listState,
         contentPadding = lazyColumnContentPadding,
     ) {
         stickyHeader {
@@ -152,7 +171,7 @@ private fun RoomMemberList(
                         }
                     }
                 }
-                AnimatedVisibility(visible = roomMembersData.isLoading()) {
+                AnimatedVisibility(visible = roomMembersData.isLoading() && roomMembersData.dataOrNull() == null) {
                     LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                 }
             }
@@ -259,7 +278,7 @@ private fun LazyListScope.roomMemberListSectionItems(
     members: ImmutableList<RoomMemberWithIdentityState>?,
     onMemberSelected: (RoomMember) -> Unit,
 ) {
-    items(members.orEmpty()) { matrixUser ->
+    items(members.orEmpty(), key = { it.roomMember.userId.value }) { matrixUser ->
         RoomMemberListItem(
             modifier = Modifier.fillMaxWidth(),
             roomMemberWithIdentity = matrixUser,
@@ -302,6 +321,7 @@ private fun RoomMemberListItem(
         modifier = modifier.clickable(onClick = onClick),
         matrixUser = roomMemberWithIdentity.roomMember.toMatrixUser(),
         avatarSize = AvatarSize.UserListItem,
+        presence = roomMemberWithIdentity.presence,
         trailingContent = {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),

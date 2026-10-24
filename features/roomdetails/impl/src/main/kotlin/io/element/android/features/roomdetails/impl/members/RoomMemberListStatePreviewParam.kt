@@ -97,6 +97,7 @@ internal fun aRoomMemberListState(
     canInvite: Boolean = false,
     eventSink: (RoomMemberListEvent) -> Unit = {},
 ) = RoomMemberListState(
+    onlineMemberCount = null,
     roomMembers = roomMembers,
     filteredRoomMembers = roomMembers.map { it.filter(searchQuery) },
     searchQuery = TextFieldState(searchQuery),
@@ -175,6 +176,7 @@ fun aBannedSusie(): RoomMember = aRoomMember(UserId("@susie:server.org"), USER_N
 fun aBannedMallory(): RoomMember = aRoomMember(UserId("@mallory:server.org"), USER_NAME_MALLORY, membership = RoomMembershipState.BAN)
 
 private fun RoomMember.withIdentity(identityState: IdentityState? = null, isInCall: Boolean = false) = RoomMemberWithIdentityState(
+    presence = io.element.android.libraries.matrix.api.user.UserPresence.Unknown,
     this,
     identityState,
     isInCall

@@ -25,6 +25,7 @@ import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.architecture.map
 import io.element.android.libraries.core.coroutine.CoroutineDispatchers
+import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.encryption.EncryptionService
 import io.element.android.libraries.matrix.api.encryption.identity.IdentityState
@@ -32,9 +33,13 @@ import io.element.android.libraries.matrix.api.room.JoinedRoom
 import io.element.android.libraries.matrix.api.room.RoomMember
 import io.element.android.libraries.matrix.api.room.RoomMembersState
 import io.element.android.libraries.matrix.api.room.RoomMembershipState
+import io.element.android.libraries.matrix.api.room.joinedRoomMembers
 import io.element.android.libraries.matrix.api.room.powerlevels.permissionsAsState
 import io.element.android.libraries.matrix.api.room.roomMembers
 import io.element.android.libraries.matrix.api.room.toMatrixUser
+import io.element.android.libraries.matrix.api.user.UserPresence
+import io.element.android.libraries.matrix.api.user.onlineMemberCount
+import io.element.android.libraries.matrix.ui.presence.observePresence
 import io.element.android.libraries.matrix.ui.room.PowerLevelRoomMemberComparator
 import io.element.android.libraries.matrix.ui.room.roomMemberIdentityStateChange
 import kotlinx.collections.immutable.ImmutableList
@@ -42,6 +47,7 @@ import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableMap
+import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.withContext
@@ -49,6 +55,7 @@ import kotlinx.coroutines.withContext
 @Inject
 class RoomMemberListPresenter(
     private val room: JoinedRoom,
+    private val matrixClient: MatrixClient,
     private val coroutineDispatchers: CoroutineDispatchers,
     private val roomMembersModerationPresenter: Presenter<RoomMemberModerationState>,
     private val encryptionService: EncryptionService,
@@ -60,6 +67,10 @@ class RoomMemberListPresenter(
         val searchQuery = rememberTextFieldState()
         val membersState by room.membersStateFlow.collectAsState()
         val roomInfo by room.roomInfoFlow.collectAsState()
+        val joinedUsers = membersState.joinedRoomMembers().map { it.userId }.toSet()
+        var visibleUsers by remember { mutableStateOf(emptySet<UserId>()) }
+        val presenceStates = matrixClient.observePresence(joinedUsers.toImmutableSet())
+        matrixClient.observePresence(visibleUsers.intersect(joinedUsers).toImmutableSet())
         val canInvite by room.permissionsAsState(false) { perms -> perms.canOwnUserInvite() }
         val roomModerationState = roomMembersModerationPresenter.present()
 
@@ -134,6 +145,7 @@ class RoomMemberListPresenter(
 
         fun handleEvent(event: RoomMemberListEvent) {
             when (event) {
+                is RoomMemberListEvent.VisibleUsersChanged -> visibleUsers = event.users
                 is RoomMemberListEvent.RoomMemberSelected ->
                     roomModerationState.eventSink(ShowActionsForUser(event.roomMember.toMatrixUser()))
                 is RoomMemberListEvent.ChangeSelectedSection -> selectedSection = event.section
@@ -142,12 +154,17 @@ class RoomMemberListPresenter(
 
         val state = RoomMemberListState(
             roomMembers = roomMembers,
-            filteredRoomMembers = filteredRoomMembers,
+            filteredRoomMembers = filteredRoomMembers.map { members ->
+                members.copy(joined = members.joined.map { member ->
+                    member.copy(presence = presenceStates[member.roomMember.userId] ?: UserPresence.Unknown)
+                }.toImmutableList())
+            },
             searchQuery = searchQuery,
             canInvite = canInvite,
             moderationState = roomModerationState,
             selectedSection = selectedSection,
             eventSink = ::handleEvent,
+            onlineMemberCount = presenceStates.onlineMemberCount(joinedUsers, roomInfo.joinedMembersCount),
         )
         if (!state.showBannedSection && selectedSection == SelectedSection.BANNED) {
             SideEffect {
@@ -162,10 +179,10 @@ class RoomMemberListPresenter(
         activeCallParticipants: ImmutableList<UserId>
     ): RoomMemberWithIdentityState {
         return if (room.info().isEncrypted != true) {
-            RoomMemberWithIdentityState(this, null, userId in activeCallParticipants)
+            RoomMemberWithIdentityState(this, null, userId in activeCallParticipants, UserPresence.Unknown)
         } else {
             val identityState = identityStates[userId] ?: encryptionService.getUserIdentity(userId, fallbackToServer = false).getOrNull()
-            RoomMemberWithIdentityState(this, identityState, userId in activeCallParticipants)
+            RoomMemberWithIdentityState(this, identityState, userId in activeCallParticipants, UserPresence.Unknown)
         }
     }
 

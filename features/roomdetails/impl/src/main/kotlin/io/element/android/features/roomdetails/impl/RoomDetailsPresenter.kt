@@ -17,6 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import dev.zacsweers.metro.Assisted
 import dev.zacsweers.metro.AssistedFactory
 import dev.zacsweers.metro.AssistedInject
@@ -35,6 +36,7 @@ import io.element.android.libraries.androidutils.clipboard.ClipboardHelper
 import io.element.android.libraries.androidutils.toast.ToastHelper
 import io.element.android.libraries.architecture.Presenter
 import io.element.android.libraries.core.coroutine.CoroutineDispatchers
+import io.element.android.libraries.core.extensions.runCatchingExceptions
 import io.element.android.libraries.designsystem.utils.snackbar.LocalSnackbarDispatcher
 import io.element.android.libraries.designsystem.utils.snackbar.SnackbarMessage
 import io.element.android.libraries.designsystem.utils.snackbar.collectSnackbarMessageAsState
@@ -44,11 +46,17 @@ import io.element.android.libraries.matrix.api.encryption.identity.IdentityState
 import io.element.android.libraries.matrix.api.notificationsettings.NotificationSettingsService
 import io.element.android.libraries.matrix.api.room.JoinedRoom
 import io.element.android.libraries.matrix.api.room.RoomMember
+import io.element.android.libraries.matrix.api.room.RoomMembersState
+import io.element.android.libraries.matrix.api.room.RoomMembershipState
 import io.element.android.libraries.matrix.api.room.join.JoinRule
+import io.element.android.libraries.matrix.api.room.joinedRoomMembers
 import io.element.android.libraries.matrix.api.room.powerlevels.canEditRolesAndPermissions
 import io.element.android.libraries.matrix.api.room.powerlevels.permissionsAsState
+import io.element.android.libraries.matrix.api.room.roomMembers
 import io.element.android.libraries.matrix.api.room.roomNotificationSettings
 import io.element.android.libraries.matrix.api.timeline.ReceiptType
+import io.element.android.libraries.matrix.api.user.onlineMemberCount
+import io.element.android.libraries.matrix.ui.presence.observePresence
 import io.element.android.libraries.matrix.ui.room.getDirectRoomMember
 import io.element.android.libraries.matrix.ui.room.roomMemberIdentityStateChange
 import io.element.android.libraries.preferences.api.store.AppPreferencesStore
@@ -57,11 +65,13 @@ import io.element.android.libraries.push.api.notifications.NotificationCleaner
 import io.element.android.libraries.ui.strings.CommonStrings
 import io.element.android.services.analytics.api.AnalyticsService
 import io.element.android.services.analyticsproviders.api.trackers.captureInteraction
+import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @AssistedInject
 class RoomDetailsPresenter(
@@ -116,6 +126,11 @@ class RoomDetailsPresenter(
 
         val isDm = roomInfo.isDm
         val membersState by room.membersStateFlow.collectAsState()
+        LaunchedEffect(room.roomId) {
+            if (roomInfo.joinedMembersCount <= 128) room.updateMembers()
+        }
+        val joinedUsers = membersState.joinedRoomMembers().map { it.userId }.toSet()
+        val presenceStates = client.observePresence(joinedUsers.toImmutableSet())
         val permissions by getPermissions()
         val canonicalAlias by remember { derivedStateOf { roomInfo.canonicalAlias } }
         val isEncrypted by remember { derivedStateOf { roomInfo.isEncrypted == true } }
@@ -149,11 +164,50 @@ class RoomDetailsPresenter(
 
         val roomNotificationSettingsState by room.roomNotificationSettingsStateFlow.collectAsState()
 
+        val closingGroup = remember { androidx.compose.runtime.mutableStateOf(false) }
+        val closeGroupError = remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+        val myPowerLevel = membersState.roomMembers().orEmpty().firstOrNull { it.userId.value == room.sessionId.value }?.powerLevel ?: 0
+        val roomMemberList = membersState.roomMembers().orEmpty()
+        val canCloseGroup = !isDm && membersState is RoomMembersState.Ready && permissions.canBan &&
+            roomMemberList.filter {
+                it.userId.value != room.sessionId.value &&
+                it.membership in listOf(RoomMembershipState.JOIN, RoomMembershipState.INVITE, RoomMembershipState.KNOCK)
+            }
+                .all { it.powerLevel < myPowerLevel }
+
         val snackbarDispatcher = LocalSnackbarDispatcher.current
         val snackbarMessage by snackbarDispatcher.collectSnackbarMessageAsState()
 
         fun handleEvent(event: RoomDetailsEvent) {
             when (event) {
+                RoomDetailsEvent.CloseGroupForEveryone -> {
+                    if (canCloseGroup && !closingGroup.value) {
+                        closingGroup.value = true
+                        closeGroupError.value = null
+                        scope.launch {
+                            try {
+                                val result = withContext(dispatchers.io) {
+                                    runCatchingExceptions {
+                                        room.updateMembers()
+                                        room.roomPermissions().getOrThrow().use { currentPermissions ->
+                                            check(currentPermissions.canOwnUserBan()) { "Ban permission is required" }
+                                        }
+                                        closeGroupMembers(room.membersStateFlow.value, room.sessionId) { userId ->
+                                            room.banUser(userId, reason = "Group closed by administrator")
+                                        }.getOrThrow()
+                                    }
+                                }
+                                if (result.isSuccess) {
+                                    leaveRoomState.eventSink(LeaveRoomEvent.LeaveRoom(room.roomId, needsConfirmation = false))
+                                } else {
+                                    closeGroupError.value = result.exceptionOrNull()?.javaClass?.simpleName
+                                }
+                            } finally {
+                                closingGroup.value = false
+                            }
+                        }
+                    }
+                }
                 is RoomDetailsEvent.LeaveRoom -> {
                     leaveRoomState.eventSink(LeaveRoomEvent.LeaveRoom(room.roomId, needsConfirmation = event.needsConfirmation))
                 }
@@ -200,8 +254,12 @@ class RoomDetailsPresenter(
             roomAvatarUrl = roomAvatar,
             roomTopic = topicState,
             memberCount = joinedMemberCount,
+            onlineMemberCount = presenceStates.onlineMemberCount(joinedUsers, joinedMemberCount),
             isEncrypted = isEncrypted,
             canInvite = permissions.canInvite,
+            canCloseGroup = canCloseGroup,
+            closingGroup = closingGroup.value,
+            closeGroupError = closeGroupError.value,
             canEdit = roomType == RoomDetailsType.Room && permissions.editDetailsPermissions.hasAny,
             roomCallState = roomCallState,
             roomType = roomType,
@@ -246,6 +304,7 @@ class RoomDetailsPresenter(
 
     private data class Permissions(
         val canInvite: Boolean = false,
+        val canBan: Boolean = false,
         val editDetailsPermissions: RoomDetailsEditPermissions = RoomDetailsEditPermissions.DEFAULT,
         val knockRequestsPermissions: KnockRequestPermissions = KnockRequestPermissions.DEFAULT,
         val securityAndPrivacyPermissions: SecurityAndPrivacyPermissions = SecurityAndPrivacyPermissions.DEFAULT,
@@ -257,6 +316,7 @@ class RoomDetailsPresenter(
         return room.permissionsAsState(Permissions()) { perms ->
             Permissions(
                 canInvite = perms.canOwnUserInvite(),
+                canBan = perms.canOwnUserBan(),
                 editDetailsPermissions = perms.roomDetailsEditPermissions(),
                 knockRequestsPermissions = perms.knockRequestPermissions(),
                 canEditRolesAndPermissions = perms.canEditRolesAndPermissions(),

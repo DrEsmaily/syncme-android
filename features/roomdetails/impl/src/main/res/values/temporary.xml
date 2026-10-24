@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright (c) 2026 SyncMe contributors.
+     SPDX-License-Identifier: AGPL-3.0-only -->
+<resources>
+    <string name="screen_close_group_confirm">Close group for everyone?</string>
+    <string name="screen_close_group_explanation">All members you can moderate will be banned and you will leave. This does not erase past messages, downloaded files or federated copies. This action cannot be undone automatically.</string>
+    <string name="screen_close_group_action">Close group</string>
+    <string name="screen_close_group_cancel">Cancel</string>
+    <string name="screen_close_group_title">Close group for everyone</string>
+    <string name="screen_close_group_progress">Closing group…</string>
+    <string name="screen_close_group_failure">Group closure failed. Some members may already have been removed; refresh and try again.</string>
+</resources>

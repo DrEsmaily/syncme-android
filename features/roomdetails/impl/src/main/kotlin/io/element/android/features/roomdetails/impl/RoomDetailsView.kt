@@ -25,7 +25,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -90,6 +92,7 @@ import io.element.android.libraries.matrix.api.room.getBestName
 import io.element.android.libraries.matrix.api.user.MatrixUser
 import io.element.android.libraries.matrix.ui.model.getAvatarData
 import io.element.android.libraries.matrix.ui.model.toText
+import io.element.android.libraries.matrix.ui.presence.toPresenceText
 import io.element.android.libraries.testtags.TestTags
 import io.element.android.libraries.testtags.testTag
 import io.element.android.libraries.ui.strings.CommonStrings
@@ -125,6 +128,29 @@ fun RoomDetailsView(
     additionalSections: @Composable ColumnScope.() -> Unit = {},
     leaveRoomView: @Composable () -> Unit,
 ) {
+    var showCloseGroupConfirmation by remember { mutableStateOf(false) }
+    if (showCloseGroupConfirmation) {
+        AlertDialog(
+            onDismissRequest = { if (!state.closingGroup) showCloseGroupConfirmation = false },
+            title = { androidx.compose.material3.Text(stringResource(R.string.screen_close_group_confirm)) },
+            text = {
+                androidx.compose.material3.Text(
+                stringResource(R.string.screen_close_group_explanation)
+            )
+            },
+            confirmButton = {
+                TextButton(enabled = !state.closingGroup, onClick = {
+                    showCloseGroupConfirmation = false
+                    state.eventSink(RoomDetailsEvent.CloseGroupForEveryone)
+                }) { androidx.compose.material3.Text(stringResource(R.string.screen_close_group_action)) }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showCloseGroupConfirmation = false }
+                ) { androidx.compose.material3.Text(stringResource(R.string.screen_close_group_cancel)) }
+            },
+        )
+    }
     val snackbarHostState = rememberSnackbarHostState(snackbarMessage = state.snackbarMessage)
     Scaffold(
         modifier = modifier,
@@ -258,6 +284,7 @@ fun RoomDetailsView(
                     PreferenceCategory {
                         MembersItem(
                             memberCount = state.memberCount,
+                            onlineCountLabel = state.onlineMemberCount.toPresenceText(),
                             hasVerificationViolations = state.hasMemberVerificationViolations,
                             openRoomMemberList = openRoomMemberList,
                         )
@@ -277,7 +304,7 @@ fun RoomDetailsView(
                     }
                 }
                 is RoomDetailsType.Dm -> {
-                    if (state.canInvite) {
+                    if (false && state.canInvite) {
                         // Note: for rooms the invite action is a Main action
                         PreferenceCategory {
                             InviteItem(onClick = invitePeople)
@@ -331,7 +358,11 @@ fun RoomDetailsView(
                 dmOtherMemberDetailsState = state.dmOtherMemberDetailsState,
                 canReportRoom = state.canReportRoom,
                 onReportRoomClick = onReportRoomClick,
-                onLeaveRoomClick = { state.eventSink(RoomDetailsEvent.LeaveRoom(needsConfirmation = true)) }
+                onLeaveRoomClick = { state.eventSink(RoomDetailsEvent.LeaveRoom(needsConfirmation = true)) },
+                canCloseGroup = state.canCloseGroup,
+                closingGroup = state.closingGroup,
+                closeGroupError = state.closeGroupError,
+                onCloseGroupClick = { showCloseGroupConfirmation = true }
             )
             if (state.showDebugInfo) {
                 DebugInfoSection(
@@ -442,7 +473,7 @@ private fun MainActionsSection(
                 onClick = { onCall(CallIntent.VIDEO) },
             )
         }
-        if (state.canInvite && state.roomType !is RoomDetailsType.Dm) {
+        if (false && state.canInvite && state.roomType !is RoomDetailsType.Dm) {
             MainActionButton(
                 title = stringResource(CommonStrings.action_invite),
                 imageVector = CompoundIcons.UserAdd(),
@@ -752,11 +783,13 @@ private fun ProfileItem(
 @Composable
 private fun MembersItem(
     memberCount: Long,
+    onlineCountLabel: String?,
     hasVerificationViolations: Boolean,
     openRoomMemberList: () -> Unit,
 ) {
     ListItem(
         content = { Text(stringResource(CommonStrings.common_people)) },
+        supportingContent = onlineCountLabel?.let { label -> { Text(label) } },
         leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.User())),
         trailingContent = if (hasVerificationViolations) {
             ListItemContent.Icon(
@@ -832,6 +865,10 @@ private fun OtherActionsSection(
     canReportRoom: Boolean,
     onReportRoomClick: () -> Unit,
     onLeaveRoomClick: () -> Unit,
+    canCloseGroup: Boolean,
+    closingGroup: Boolean,
+    closeGroupError: String?,
+    onCloseGroupClick: () -> Unit,
     dmOtherMemberDetailsState: UserProfileState?,
 ) {
     PreferenceCategory {
@@ -848,6 +885,20 @@ private fun OtherActionsSection(
                 style = ListItemStyle.Destructive,
                 onClick = onReportRoomClick,
             )
+        }
+        if (canCloseGroup) {
+            ListItem(
+                content = { Text(stringResource(R.string.screen_close_group_title)) },
+                leadingContent = ListItemContent.Icon(IconSource.Vector(CompoundIcons.Delete())),
+                style = ListItemStyle.Destructive,
+                onClick = onCloseGroupClick,
+            )
+        }
+        if (closingGroup) {
+            ListItem(content = { Text(stringResource(R.string.screen_close_group_progress)) })
+        }
+        if (closeGroupError != null) {
+            ListItem(content = { Text(stringResource(R.string.screen_close_group_failure)) })
         }
         ListItem(
             content = {
