@@ -28,7 +28,7 @@ data class RoomMemberListState(
     val selectedSection: SelectedSection,
     val moderationState: RoomMemberModerationState,
     val eventSink: (RoomMemberListEvent) -> Unit,
-    val onlineMemberCount: OnlineMemberCount? = null,
+    val onlineMemberCount: OnlineMemberCount?,
 ) {
     val showBannedSection: Boolean = moderationState.permissions.canBan && roomMembers.dataOrNull()?.banned?.isNotEmpty() == true
 }
@@ -70,5 +70,5 @@ data class RoomMemberWithIdentityState(
     val roomMember: RoomMember,
     val identityState: IdentityState?,
     val isInCall: Boolean,
-    val presence: UserPresence = UserPresence.Unknown,
+    val presence: UserPresence,
 )

@@ -129,6 +129,10 @@ fun aRoomDetailsState(
     hasNewContent: Boolean = false,
     eventSink: (RoomDetailsEvent) -> Unit = {},
 ) = RoomDetailsState(
+    onlineMemberCount = null,
+    canCloseGroup = false,
+    closingGroup = false,
+    closeGroupError = null,
     roomId = roomId,
     roomName = roomName,
     roomAlias = roomAlias,

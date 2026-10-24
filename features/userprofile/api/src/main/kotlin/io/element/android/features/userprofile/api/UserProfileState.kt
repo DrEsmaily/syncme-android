@@ -30,7 +30,7 @@ data class UserProfileState(
     val snackbarMessage: SnackbarMessage?,
     val displayedStatus: DisplayedStatus?,
     val eventSink: (UserProfileEvent) -> Unit,
-    val presence: UserPresence = UserPresence.Unknown
+    val presence: UserPresence
 ) {
     enum class ConfirmationDialog {
         Block,

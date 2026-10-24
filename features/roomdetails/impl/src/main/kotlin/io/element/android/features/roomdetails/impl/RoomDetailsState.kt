@@ -24,7 +24,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 
 data class RoomDetailsState(
-    val onlineMemberCount: OnlineMemberCount? = null,
+    val onlineMemberCount: OnlineMemberCount?,
     val roomId: RoomId,
     val roomName: String,
     val roomAlias: RoomAlias?,
@@ -56,9 +56,9 @@ data class RoomDetailsState(
     val roomHistoryVisibility: RoomHistoryVisibility,
     val hasNewContent: Boolean,
     val eventSink: (RoomDetailsEvent) -> Unit,
-    val canCloseGroup: Boolean = false,
-    val closingGroup: Boolean = false,
-    val closeGroupError: String? = null,
+    val canCloseGroup: Boolean,
+    val closingGroup: Boolean,
+    val closeGroupError: String?,
 ) {
     val roomBadges = buildList {
         if (isEncrypted) {
