@@ -52,6 +52,7 @@ fun aUserProfileState(
     displayedStatus: DisplayedStatus? = null,
     eventSink: (UserProfileEvent) -> Unit = {},
 ) = UserProfileState(
+    presence = io.element.android.libraries.matrix.api.user.UserPresence.Unknown,
     userId = userId,
     userName = userName,
     avatarUrl = avatarUrl,
