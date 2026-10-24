@@ -105,7 +105,7 @@ class MediaSettingsPresenterTest {
 
     private fun CoroutineScope.createMediaSettingsPresenter(
         sessionPreferencesStore: InMemorySessionPreferencesStore = InMemorySessionPreferencesStore(),
-        featureFlagService: FakeFeatureFlagService = FakeFeatureFlagService(),
+        featureFlagService: FakeFeatureFlagService = FakeFeatureFlagService(mapOf(FeatureFlags.SelectableMediaQuality.key to false)),
     ) = MediaSettingsPresenter(
         sessionPreferencesStore = sessionPreferencesStore,
         featureFlagService = featureFlagService,

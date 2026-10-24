@@ -53,7 +53,6 @@ import io.element.android.features.messages.impl.attachments.video.MediaOptimiza
 import io.element.android.features.messages.impl.attachments.video.MediaOptimizationSelectorState
 import io.element.android.features.messages.impl.attachments.video.VideoUploadEstimation
 import io.element.android.libraries.core.bool.orFalse
-import io.element.android.libraries.core.mimetype.MimeTypes.isMimeTypeVideo
 import io.element.android.libraries.designsystem.components.ProgressDialog
 import io.element.android.libraries.designsystem.components.ProgressDialogType
 import io.element.android.libraries.designsystem.components.button.BackButton
@@ -347,8 +346,6 @@ private fun AttachmentPreviewContent(
         val mediaInfo = (state.attachments[state.currentIndex] as? Attachment.Media)?.localMedia?.info
         if (mediaInfo?.isImageAttachment() == true) {
             ImageOptimizationSelector(state.mediaOptimizationSelectorState)
-        } else if (mediaInfo?.mimeType?.isMimeTypeVideo() == true) {
-            VideoPresetSelector(state = state.mediaOptimizationSelectorState)
         }
 
         val sizeFormatter = rememberFileSizeFormatter()
@@ -402,55 +399,6 @@ private fun ImageOptimizationSelector(state: MediaOptimizationSelectorState) {
                 onCheckedChange = { value -> state.eventSink(MediaOptimizationSelectorEvent.SelectImageOptimization(value)) },
             )
         }
-    }
-}
-
-@Composable
-private fun VideoPresetSelector(
-    state: MediaOptimizationSelectorState,
-) {
-    val videoPresets = state.videoSizeEstimations.dataOrNull()
-    var selectedPreset by remember(state.selectedVideoPreset) { mutableStateOf(state.selectedVideoPreset) }
-
-    val displayDialog = state.displayVideoPresetSelectorDialog
-
-    val sizeFormatter = rememberFileSizeFormatter()
-
-    if (state.displayMediaSelectorViews == true && videoPresets != null && state.selectedVideoPreset != null) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 16.dp)
-                .niceClickable { state.eventSink(MediaOptimizationSelectorEvent.OpenVideoPresetSelectorDialog) }
-        ) {
-            val estimation = videoPresets.find { it.preset == selectedPreset }
-            val estimationMb = estimation?.sizeInBytes?.let { sizeFormatter.format(it, true) }
-            val title = buildString {
-                append(state.selectedVideoPreset.title())
-                if (estimationMb != null) {
-                    append(" ($estimationMb)")
-                }
-            }
-            Text(text = title, style = ElementTheme.typography.fontBodyLgMedium)
-            Text(
-                text = stringResource(R.string.screen_media_upload_preview_change_video_quality_prompt),
-                style = ElementTheme.typography.fontBodyLgMedium,
-                color = ElementTheme.colors.textSecondary,
-            )
-        }
-    }
-
-    if (displayDialog) {
-        VideoQualitySelectorDialog(
-            selectedPreset = selectedPreset ?: VideoCompressionPreset.STANDARD,
-            videoSizeEstimations = videoPresets ?: persistentListOf(),
-            maxFileUploadSize = state.maxUploadSize.dataOrNull(),
-            onSubmit = { preset ->
-                selectedPreset = preset
-                state.eventSink(MediaOptimizationSelectorEvent.SelectVideoPreset(preset))
-            },
-            onDismiss = { state.eventSink(MediaOptimizationSelectorEvent.DismissVideoPresetSelectorDialog) }
-        )
     }
 }
 
@@ -575,8 +523,7 @@ internal fun VideoQualitySelectorDialogPreview() {
             selectedPreset = VideoCompressionPreset.STANDARD,
             videoSizeEstimations = persistentListOf(
                 VideoUploadEstimation(VideoCompressionPreset.HIGH, 2_000_000, canUpload = false),
-                VideoUploadEstimation(VideoCompressionPreset.STANDARD, 1_000_000, canUpload = true),
-                VideoUploadEstimation(VideoCompressionPreset.LOW, 500_000, canUpload = true)
+                VideoUploadEstimation(VideoCompressionPreset.STANDARD, 1_000_000, canUpload = true)
             ),
             maxFileUploadSize = 1_500_000,
             onSubmit = {},
@@ -587,24 +534,20 @@ internal fun VideoQualitySelectorDialogPreview() {
 
 @Composable
 fun VideoCompressionPreset.title(): String {
-    return stringResource(
-        when (this) {
-            VideoCompressionPreset.STANDARD -> CommonStrings.common_video_quality_standard
-            VideoCompressionPreset.HIGH -> CommonStrings.common_video_quality_high
-            VideoCompressionPreset.LOW -> CommonStrings.common_video_quality_low
-        }
-    )
+    return when (this) {
+        VideoCompressionPreset.HIGH -> "Original"
+        VideoCompressionPreset.STANDARD -> "Compressed"
+        VideoCompressionPreset.LOW -> "Compressed"
+    }
 }
 
 @Composable
 fun VideoCompressionPreset.subtitle(): String {
-    return stringResource(
-        when (this) {
-            VideoCompressionPreset.STANDARD -> CommonStrings.common_video_quality_standard_description
-            VideoCompressionPreset.HIGH -> CommonStrings.common_video_quality_high_description
-            VideoCompressionPreset.LOW -> CommonStrings.common_video_quality_low_description
-        }
-    )
+    return when (this) {
+        VideoCompressionPreset.HIGH -> "Original file, no video re-encoding"
+        VideoCompressionPreset.STANDARD,
+        VideoCompressionPreset.LOW -> "Smaller file, optimized for faster upload"
+    }
 }
 
 @Composable

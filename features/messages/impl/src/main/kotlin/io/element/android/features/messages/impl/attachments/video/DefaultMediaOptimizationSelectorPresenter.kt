@@ -22,17 +22,13 @@ import dev.zacsweers.metro.ContributesBinding
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.core.mimetype.MimeTypes.isMimeTypeVideo
 import io.element.android.libraries.di.SessionScope
-import io.element.android.libraries.featureflag.api.FeatureFlagService
-import io.element.android.libraries.featureflag.api.FeatureFlags
 import io.element.android.libraries.mediaupload.api.MaxUploadSizeProvider
 import io.element.android.libraries.mediaupload.api.MediaOptimizationConfigProvider
-import io.element.android.libraries.mediaupload.api.compressorHelper
 import io.element.android.libraries.mediaviewer.api.local.LocalMedia
 import io.element.android.libraries.preferences.api.store.VideoCompressionPreset
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import timber.log.Timber
-import kotlin.math.roundToLong
 
 @AssistedInject
 class DefaultMediaOptimizationSelectorPresenter(
@@ -40,10 +36,9 @@ class DefaultMediaOptimizationSelectorPresenter(
     @Assisted private val localMedia: LocalMedia,
     @Assisted private val sendAsFile: Boolean,
     private val maxUploadSizeProvider: MaxUploadSizeProvider,
-    private val featureFlagService: FeatureFlagService,
     private val mediaOptimizationConfigProvider: MediaOptimizationConfigProvider,
-    private val videoCompressionPresetSelector: VideoCompressionPresetSelector,
-    mediaExtractorFactory: VideoMetadataExtractor.Factory,
+    @Suppress("UNUSED_PARAMETER") videoCompressionPresetSelector: VideoCompressionPresetSelector,
+    @Suppress("UNUSED_PARAMETER") mediaExtractorFactory: VideoMetadataExtractor.Factory,
 ) : MediaOptimizationSelectorPresenter {
     @ContributesBinding(SessionScope::class)
     @AssistedFactory
@@ -55,14 +50,11 @@ class DefaultMediaOptimizationSelectorPresenter(
         ): DefaultMediaOptimizationSelectorPresenter
     }
 
-    private val mediaExtractor = mediaExtractorFactory.create(localMedia.uri)
-
     @Composable
     override fun present(): MediaOptimizationSelectorState {
         val displayMediaSelectorViews by produceState<Boolean?>(null) {
-            // When sending as a raw file, never show the optimization selector: images skip
-            // recompression, while videos use the highest available best-fit preset.
-            value = !sendAsFile && featureFlagService.isFeatureEnabled(FeatureFlags.SelectableMediaQuality)
+            // SyncMe exposes no video quality choice: video is always sent as Original.
+            value = !sendAsFile && !localMedia.info.mimeType.isMimeTypeVideo()
         }
 
         var displayVideoPresetSelectorDialog by remember { mutableStateOf(false) }
@@ -92,36 +84,14 @@ class DefaultMediaOptimizationSelectorPresenter(
                 return@produceState
             }
 
-            val (videoDimensions, duration) = mediaExtractor.use {
-                val size = it.getSize()
-                    .getOrElse { exception ->
-                        value = AsyncData.Failure(exception)
-                        return@produceState
-                    }
-
-                val duration = it.getDuration()
-                    .getOrElse { exception ->
-                        value = AsyncData.Failure(exception)
-                        return@produceState
-                    }
-                size to duration
-            }
-
-            val sizeEstimations = VideoCompressionPreset.entries
-                .map { preset ->
-                    val bitRateAsBytes = preset.compressorHelper().calculateOptimalBitrate(videoDimensions, 30) / 8f
-                    val durationInSeconds = duration.inWholeSeconds.toFloat()
-                    val calculatedSize = (bitRateAsBytes * durationInSeconds * 1.1f).roundToLong() // Adding 10% overhead for safety
-                    VideoUploadEstimation(
-                        preset = preset,
-                        sizeInBytes = calculatedSize,
-                        canUpload = calculatedSize <= (maxUploadSize as AsyncData.Success).data
-                    )
-                }
-                .toImmutableList()
-                .also { sizes ->
-                    Timber.d(sizes.joinToString("\n") { "Calculated size for ${it.preset}: ${it.sizeInBytes} MB. Max upload size: $maxUploadSize" })
-                }
+            val originalSize = localMedia.info.fileSize ?: 0L
+            val sizeEstimations = listOf(
+                VideoUploadEstimation(
+                    preset = VideoCompressionPreset.HIGH,
+                    sizeInBytes = originalSize,
+                    canUpload = originalSize <= (maxUploadSize as AsyncData.Success).data,
+                )
+            ).toImmutableList()
 
             value = AsyncData.Success(sizeEstimations)
         }
@@ -130,25 +100,11 @@ class DefaultMediaOptimizationSelectorPresenter(
         var selectedVideoOptimizationPreset by remember { mutableStateOf<AsyncData<VideoCompressionPreset>>(AsyncData.Loading()) }
 
         LaunchedEffect(videoSizeEstimations.dataOrNull()) {
-            if (sendAsFile) {
-                // Send-as-file path: pin to no image compression, and pick the highest-quality
-                // video preset that still fits the upload limit (we have no true "do not re-encode
-                // video" path in the pre-processor right now).
-                selectedImageOptimization = AsyncData.Success(false)
-                selectedVideoOptimizationPreset = videoCompressionPresetSelector.selectBestVideoPreset(
-                    expectedVideoPreset = VideoCompressionPreset.HIGH,
-                    videoSizeEstimations = videoSizeEstimations,
-                )
-                return@LaunchedEffect
-            }
             val mediaOptimizationConfig = mediaOptimizationConfigProvider.get()
-            selectedImageOptimization = AsyncData.Success(mediaOptimizationConfig.compressImages)
-            // Find the best video preset based on the default preset and the video size estimations
-            // Since the estimation for the current preset may be way too large to upload, we check the ones that provide lower file sizes
-            selectedVideoOptimizationPreset = videoCompressionPresetSelector.selectBestVideoPreset(
-                expectedVideoPreset = mediaOptimizationConfig.videoCompressionPreset,
-                videoSizeEstimations = videoSizeEstimations,
+            selectedImageOptimization = AsyncData.Success(
+                if (sendAsFile) false else mediaOptimizationConfig.compressImages
             )
+            selectedVideoOptimizationPreset = AsyncData.Success(VideoCompressionPreset.HIGH)
         }
 
         fun handleEvent(event: MediaOptimizationSelectorEvent) {
@@ -157,22 +113,7 @@ class DefaultMediaOptimizationSelectorPresenter(
                     selectedImageOptimization = AsyncData.Success(event.enabled)
                 }
                 is MediaOptimizationSelectorEvent.SelectVideoPreset -> {
-                    val estimations = videoSizeEstimations.dataOrNull()
-                    if (estimations != null) {
-                        val preset = estimations.find { it.preset == event.preset }
-                        if (preset == null) {
-                            Timber.e("Selected video preset ${event.preset} is not available in the estimations")
-                            return
-                        }
-                        if (!preset.canUpload) {
-                            Timber.w("Selected video preset ${event.preset} exceeds max upload size")
-                            return
-                        }
-                    } else {
-                        Timber.e("Video size estimations are not available")
-                        return
-                    }
-                    selectedVideoOptimizationPreset = AsyncData.Success(event.preset)
+                    selectedVideoOptimizationPreset = AsyncData.Success(VideoCompressionPreset.HIGH)
                     displayVideoPresetSelectorDialog = false
                 }
                 is MediaOptimizationSelectorEvent.OpenVideoPresetSelectorDialog -> {

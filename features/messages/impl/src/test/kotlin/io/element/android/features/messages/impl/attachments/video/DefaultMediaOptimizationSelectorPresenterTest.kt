@@ -14,8 +14,6 @@ import com.google.common.truth.Truth.assertThat
 import io.element.android.features.messages.test.attachments.video.FakeVideoMetadataExtractor
 import io.element.android.features.messages.test.attachments.video.FakeVideoMetadataExtractorFactory
 import io.element.android.libraries.architecture.AsyncData
-import io.element.android.libraries.featureflag.api.FeatureFlags
-import io.element.android.libraries.featureflag.test.FakeFeatureFlagService
 import io.element.android.libraries.matrix.test.AN_EXCEPTION
 import io.element.android.libraries.mediaupload.api.MaxUploadSizeProvider
 import io.element.android.libraries.mediaupload.test.FakeMediaOptimizationConfigProvider
@@ -59,8 +57,8 @@ class DefaultMediaOptimizationSelectorPresenterTest : RobolectricTest() {
                 assertThat(videoSizeEstimations).isInstanceOf(AsyncData.Success::class.java)
                 assertThat(maxUploadSize).isInstanceOf(AsyncData.Success::class.java)
                 assertThat(isImageOptimizationEnabled).isTrue()
-                assertThat(selectedVideoPreset).isEqualTo(VideoCompressionPreset.STANDARD)
-                assertThat(displayMediaSelectorViews).isTrue()
+                assertThat(selectedVideoPreset).isEqualTo(VideoCompressionPreset.HIGH)
+                assertThat(displayMediaSelectorViews).isFalse()
                 assertThat(displayVideoPresetSelectorDialog).isFalse()
             }
         }
@@ -78,7 +76,7 @@ class DefaultMediaOptimizationSelectorPresenterTest : RobolectricTest() {
             // The data will load after the first recomposition
             awaitItem().run {
                 assertThat(videoSizeEstimations).isInstanceOf(AsyncData.Uninitialized::class.java)
-                assertThat(selectedVideoPreset).isNull()
+                assertThat(selectedVideoPreset).isEqualTo(VideoCompressionPreset.HIGH)
             }
         }
     }
@@ -103,7 +101,7 @@ class DefaultMediaOptimizationSelectorPresenterTest : RobolectricTest() {
     }
 
     @Test
-    fun `present - SelectVideoPreset sets it and dismisses the dialog`() = runTest {
+    fun `present - preset events retain original video and dismiss the dialog`() = runTest {
         val presenter = createDefaultMediaOptimizationSelectorPresenter()
         presenter.test {
             // Skip loading state
@@ -117,13 +115,15 @@ class DefaultMediaOptimizationSelectorPresenterTest : RobolectricTest() {
 
             eventSink(MediaOptimizationSelectorEvent.SelectVideoPreset(VideoCompressionPreset.LOW))
 
-            assertThat(awaitItem().selectedVideoPreset).isEqualTo(VideoCompressionPreset.LOW)
-            assertThat(awaitItem().displayVideoPresetSelectorDialog).isFalse()
+            awaitItem().run {
+                assertThat(selectedVideoPreset).isEqualTo(VideoCompressionPreset.HIGH)
+                assertThat(displayVideoPresetSelectorDialog).isFalse()
+            }
         }
     }
 
     @Test
-    fun `present - SelectVideoPreset won't do anything if there is no metadata`() = runTest {
+    fun `present - original size is available without extracting video metadata`() = runTest {
         val presenter = createDefaultMediaOptimizationSelectorPresenter(
             mediaExtractorFactory = FakeVideoMetadataExtractorFactory(FakeVideoMetadataExtractor(sizeResult = Result.failure(AN_EXCEPTION))),
         )
@@ -131,7 +131,7 @@ class DefaultMediaOptimizationSelectorPresenterTest : RobolectricTest() {
             // Skip loading state
             val eventSink = awaitItem().eventSink
 
-            assertThat(awaitItem().videoSizeEstimations.dataOrNull()).isNull()
+            assertThat(awaitItem().videoSizeEstimations.dataOrNull()!!.single().sizeInBytes).isEqualTo(aVideoMediaInfo().fileSize)
 
             eventSink(MediaOptimizationSelectorEvent.SelectVideoPreset(VideoCompressionPreset.LOW))
 
@@ -140,29 +140,14 @@ class DefaultMediaOptimizationSelectorPresenterTest : RobolectricTest() {
     }
 
     @Test
-    fun `present - SelectVideoPreset won't select the preset if it won't allow to upload the video`() = runTest {
-        val presenter = createDefaultMediaOptimizationSelectorPresenter(
-            mediaExtractorFactory = FakeVideoMetadataExtractorFactory(
-                FakeVideoMetadataExtractor(
-                    sizeResult = Result.success(Size(10_000, 10_000)),
-                    duration = Result.success(10.minutes)
-                )
-            ),
-        )
-        presenter.test {
-            // Skip loading and loaded states
-            val eventSink = awaitItem().eventSink
+    fun `present - oversized original is rejected without silently lowering quality`() = runTest {
+        createDefaultMediaOptimizationSelectorPresenter(sendAsFile = true).test {
             skipItems(1)
-
-            // No video results could be uploaded
             awaitItem().run {
-                val videoSizeEstimations = videoSizeEstimations.dataOrNull()
-                assertThat(videoSizeEstimations).isNotNull()
-                assertThat(videoSizeEstimations!!.none { it.canUpload }).isTrue()
+                assertThat(videoSizeEstimations.dataOrNull()!!.single().canUpload).isFalse()
+                assertThat(selectedVideoPreset).isEqualTo(VideoCompressionPreset.HIGH)
+                eventSink(MediaOptimizationSelectorEvent.SelectVideoPreset(VideoCompressionPreset.LOW))
             }
-
-            eventSink(MediaOptimizationSelectorEvent.SelectVideoPreset(VideoCompressionPreset.HIGH))
-
             ensureAllEventsConsumed()
         }
     }
@@ -198,9 +183,7 @@ class DefaultMediaOptimizationSelectorPresenterTest : RobolectricTest() {
 
     @Test
     fun `present - with feature flag disabled won't display the media quality selector views`() = runTest {
-        val presenter = createDefaultMediaOptimizationSelectorPresenter(
-            featureFlagService = FakeFeatureFlagService(mapOf(FeatureFlags.SelectableMediaQuality.key to false)),
-        )
+        val presenter = createDefaultMediaOptimizationSelectorPresenter()
         presenter.test {
             // Skip loading and loaded state
             skipItems(1)
@@ -213,7 +196,6 @@ class DefaultMediaOptimizationSelectorPresenterTest : RobolectricTest() {
         val presenter = createDefaultMediaOptimizationSelectorPresenter(
             localMedia = aLocalMedia(mockMediaUrl, anImageMediaInfo()),
             // Even with the feature flag on, sendAsFile must hide the selector.
-            featureFlagService = FakeFeatureFlagService(mapOf(FeatureFlags.SelectableMediaQuality.key to true)),
             // And it must override the user's "optimize images" preference.
             mediaOptimizationConfigProvider = FakeMediaOptimizationConfigProvider(),
             sendAsFile = true,
@@ -252,7 +234,7 @@ class DefaultMediaOptimizationSelectorPresenterTest : RobolectricTest() {
     }
 
     @Test
-    fun `present - sendAsFile picks lower video preset when HIGH exceeds the upload limit`() = runTest {
+    fun `present - sending as a file preserves original quality`() = runTest {
         val presenter = createDefaultMediaOptimizationSelectorPresenter(
             maxUploadSizeProvider = MaxUploadSizeProvider { Result.success(250_000_000L) },
             mediaExtractorFactory = FakeVideoMetadataExtractorFactory(
@@ -268,7 +250,7 @@ class DefaultMediaOptimizationSelectorPresenterTest : RobolectricTest() {
             skipItems(1)
             awaitItem().run {
                 assertThat(displayMediaSelectorViews).isFalse()
-                assertThat(selectedVideoPreset).isEqualTo(VideoCompressionPreset.STANDARD)
+                assertThat(selectedVideoPreset).isEqualTo(VideoCompressionPreset.HIGH)
             }
         }
     }
@@ -277,7 +259,6 @@ class DefaultMediaOptimizationSelectorPresenterTest : RobolectricTest() {
         index: Int = 0,
         localMedia: LocalMedia = aLocalMedia(mockMediaUrl, aVideoMediaInfo()),
         maxUploadSizeProvider: MaxUploadSizeProvider = MaxUploadSizeProvider { Result.success(1_000L) },
-        featureFlagService: FakeFeatureFlagService = FakeFeatureFlagService(mapOf(FeatureFlags.SelectableMediaQuality.key to true)),
         mediaExtractorFactory: FakeVideoMetadataExtractorFactory = FakeVideoMetadataExtractorFactory(),
         mediaOptimizationConfigProvider: FakeMediaOptimizationConfigProvider = FakeMediaOptimizationConfigProvider(),
         videoCompressionPresetSelector: VideoCompressionPresetSelector = VideoCompressionPresetSelector(),
@@ -288,7 +269,6 @@ class DefaultMediaOptimizationSelectorPresenterTest : RobolectricTest() {
             localMedia = localMedia,
             sendAsFile = sendAsFile,
             maxUploadSizeProvider = maxUploadSizeProvider,
-            featureFlagService = featureFlagService,
             mediaExtractorFactory = mediaExtractorFactory,
             mediaOptimizationConfigProvider = mediaOptimizationConfigProvider,
             videoCompressionPresetSelector = videoCompressionPresetSelector,
