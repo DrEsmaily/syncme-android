@@ -835,7 +835,7 @@ class AttachmentsPreviewPresenterTest : RobolectricTest() {
     }
 
     @Test
-    fun `present - sendAsFile video is pre-processed with best fitting preset`() = runTest {
+    fun `present - sendAsFile video keeps the original despite legacy preset estimates`() = runTest {
         val mediaPreProcessor = FakeMediaPreProcessor()
         val presenter = createAttachmentsPreviewPresenter(
             attachments = listOf(
@@ -878,7 +878,7 @@ class AttachmentsPreviewPresenterTest : RobolectricTest() {
             assertThat(mediaPreProcessor.lastMediaOptimizationConfig).isEqualTo(
                 MediaOptimizationConfig(
                     compressImages = false,
-                    videoCompressionPreset = VideoCompressionPreset.STANDARD,
+                    videoCompressionPreset = VideoCompressionPreset.HIGH,
                 )
             )
         }
