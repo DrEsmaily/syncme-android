@@ -67,8 +67,8 @@ data class MessagesState(
     val showLiveLocationShareBanner: Boolean,
     val redactEventAction: AsyncAction<Unit>,
     val eventSink: (MessagesEvent) -> Unit,
-    val dmPresence: UserPresence = UserPresence.Unknown,
-    val onlineMemberCount: OnlineMemberCount? = null
+    val dmPresence: UserPresence,
+    val onlineMemberCount: OnlineMemberCount?
 ) {
     val isTombstoned = successorRoom != null
 

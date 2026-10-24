@@ -136,6 +136,8 @@ fun aMessagesState(
     eventSink: (MessagesEvent) -> Unit = {},
     redactEventAction: AsyncAction<Unit> = AsyncAction.Uninitialized,
 ) = MessagesState(
+    dmPresence = io.element.android.libraries.matrix.api.user.UserPresence.Unknown,
+    onlineMemberCount = null,
     roomId = RoomId("!id:domain"),
     roomName = roomName,
     roomAvatar = roomAvatar,

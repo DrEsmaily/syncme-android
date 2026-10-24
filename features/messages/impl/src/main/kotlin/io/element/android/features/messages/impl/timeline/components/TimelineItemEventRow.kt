@@ -208,7 +208,7 @@ fun TimelineItemEventRow(
     val coroutineScope = rememberCoroutineScope()
     val interactionSource = remember { MutableInteractionSource() }
     val bubbleWidthPx = remember { mutableIntStateOf(0) }
-    val naturalBubbleWidthPx = remember(event.eventOrTransactionId) { mutableIntStateOf(0) }
+    val naturalBubbleWidthPx = remember(event.id) { mutableIntStateOf(0) }
     val availableRowWidthPx = remember { mutableIntStateOf(0) }
     // Size the upload bubble to the actual one-line status text, never a fixed 300dp.
     // Only small attachments are expanded; large media keeps its natural width.
