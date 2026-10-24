@@ -64,9 +64,11 @@ import io.element.android.libraries.designsystem.theme.unreadIndicator
 import io.element.android.libraries.matrix.api.notification.CallIntent
 import io.element.android.libraries.matrix.api.room.RoomNotificationMode
 import io.element.android.libraries.matrix.api.user.DisplayedStatus
+import io.element.android.libraries.matrix.api.user.UserPresence
 import io.element.android.libraries.matrix.ui.components.DisplayNameWithStatus
 import io.element.android.libraries.matrix.ui.components.InviteSenderView
 import io.element.android.libraries.matrix.ui.model.InviteSender
+import io.element.android.libraries.matrix.ui.presence.PresenceIndicator
 import io.element.android.libraries.ui.strings.CommonStrings
 import timber.log.Timber
 
@@ -198,18 +200,21 @@ private fun RoomSummaryScaffoldRow(
             .padding(horizontal = 16.dp, vertical = 11.dp)
             .height(IntrinsicSize.Min),
     ) {
-        Avatar(
-            avatarData = room.avatarData,
-            avatarType = if (room.isSpace) {
-                AvatarType.Space(isTombstoned = room.isTombstoned)
-            } else {
-                AvatarType.Room(
-                    heroes = room.heroes,
-                    isTombstoned = room.isTombstoned,
-                )
-            },
-            hideImage = hideAvatarImage,
-        )
+        Box(contentAlignment = Alignment.BottomEnd) {
+            Avatar(
+                avatarData = room.avatarData,
+                avatarType = if (room.isSpace) {
+                    AvatarType.Space(isTombstoned = room.isTombstoned)
+                } else {
+                    AvatarType.Room(heroes = room.heroes, isTombstoned = room.isTombstoned)
+                },
+                hideImage = hideAvatarImage,
+            )
+            val hasVisiblePresence = room.presence == UserPresence.Online || room.presence == UserPresence.Away
+            if (room.isDm && hasVisiblePresence && !hideAvatarImage) {
+                PresenceIndicator(room.presence)
+            }
+        }
         Spacer(modifier = Modifier.width(16.dp))
         Column(
             modifier = Modifier.fillMaxWidth(),

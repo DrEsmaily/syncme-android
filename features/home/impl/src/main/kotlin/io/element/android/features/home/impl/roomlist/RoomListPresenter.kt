@@ -8,6 +8,7 @@
 
 package io.element.android.features.home.impl.roomlist
 
+import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -20,7 +21,6 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import dev.zacsweers.metro.Inject
@@ -35,7 +35,6 @@ import io.element.android.features.home.impl.search.RoomListSearchEvent
 import io.element.android.features.home.impl.search.RoomListSearchState
 import io.element.android.features.home.impl.spacefilters.SpaceFiltersState
 import io.element.android.features.home.impl.spacefilters.into
-import io.element.android.features.home.impl.spacefilters.selectedFilter
 import io.element.android.features.invite.api.SeenInvitesStore
 import io.element.android.features.invite.api.acceptdecline.AcceptDeclineInviteEvent.AcceptInvite
 import io.element.android.features.invite.api.acceptdecline.AcceptDeclineInviteEvent.DeclineInvite
@@ -45,16 +44,21 @@ import io.element.android.features.leaveroom.api.LeaveRoomState
 import io.element.android.features.preferences.impl.tasks.MarkRoomAsRead
 import io.element.android.libraries.architecture.AsyncData
 import io.element.android.libraries.architecture.Presenter
+import io.element.android.libraries.di.annotations.ApplicationContext
 import io.element.android.libraries.featureflag.api.FeatureFlagService
 import io.element.android.libraries.featureflag.api.FeatureFlags
 import io.element.android.libraries.featureflag.api.ShowAllActivityInRoomListFeature
 import io.element.android.libraries.fullscreenintent.api.FullScreenIntentPermissionsState
 import io.element.android.libraries.matrix.api.MatrixClient
 import io.element.android.libraries.matrix.api.core.RoomId
+import io.element.android.libraries.matrix.api.core.UserId
 import io.element.android.libraries.matrix.api.encryption.RecoveryState
 import io.element.android.libraries.matrix.api.roomlist.RoomList
 import io.element.android.libraries.matrix.api.roomlist.RoomListFilter
+import io.element.android.libraries.matrix.api.user.UserPresence
+import io.element.android.libraries.matrix.ui.presence.observePresence
 import io.element.android.libraries.matrix.ui.safety.rememberHideInvitesAvatar
+import io.element.android.libraries.preferences.api.store.AppPreferencesStore
 import io.element.android.libraries.push.api.battery.BatteryOptimizationState
 import io.element.android.services.analytics.api.AnalyticsService
 import io.element.android.services.analytics.api.watchers.AnalyticsColdStartWatcher
@@ -63,6 +67,7 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.collections.immutable.toImmutableSet
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
@@ -89,6 +94,8 @@ class RoomListPresenter(
     private val spaceFiltersPresenter: Presenter<SpaceFiltersState>,
     private val globalSearchPresenter: Presenter<GlobalSearchState>,
     private val featureFlagService: FeatureFlagService,
+    private val appPreferencesStore: AppPreferencesStore,
+    @ApplicationContext private val appContext: Context,
 ) : Presenter<RoomListState> {
     private val encryptionService = client.encryptionService
 
@@ -106,7 +113,12 @@ class RoomListPresenter(
             roomListDataSource.launchIn(this)
         }
 
-        var securityBannerDismissed by rememberSaveable { mutableStateOf(false) }
+        // Persist dismissal per account across navigation and app restarts.
+        val securityBannerPrefs = remember { appContext.getSharedPreferences("syncme_security_banner_dismissals", Context.MODE_PRIVATE) }
+        val securityBannerKey = remember(client.sessionId.value) { "dismissed_" + client.sessionId.value }
+        var securityBannerDismissed by remember(securityBannerKey) {
+            mutableStateOf(securityBannerPrefs.getBoolean(securityBannerKey, false))
+        }
         val showNewNotificationSoundBanner by remember {
             announcementService.announcementsToShowFlow().map { announcements ->
                 announcements.contains(Announcement.NewNotificationSound)
@@ -128,8 +140,11 @@ class RoomListPresenter(
                 is RoomListEvent.UpdateVisibleRange -> coroutineScope.launch {
                     roomListDataSource.updateVisibleRange(event.range)
                 }
-                RoomListEvent.DismissRequestVerificationPrompt -> securityBannerDismissed = true
-                RoomListEvent.DismissBanner -> securityBannerDismissed = true
+                RoomListEvent.DismissRequestVerificationPrompt,
+                RoomListEvent.DismissBanner -> {
+                    securityBannerDismissed = true
+                    securityBannerPrefs.edit().putBoolean(securityBannerKey, true).apply()
+                }
                 RoomListEvent.DismissNewNotificationSoundBanner -> coroutineScope.launch {
                     announcementService.onAnnouncementDismissed(Announcement.NewNotificationSound)
                 }
@@ -144,6 +159,9 @@ class RoomListPresenter(
                     leaveRoomState.eventSink(LeaveRoomEvent.LeaveRoom(event.roomId, needsConfirmation = event.needsConfirmation))
                 }
                 is RoomListEvent.SetRoomIsFavorite -> coroutineScope.setRoomIsFavorite(event.roomId, event.isFavorite)
+                is RoomListEvent.ToggleRoomCustomTag -> coroutineScope.launch {
+                    appPreferencesStore.toggleRoomInCustomTag(event.tagId, event.roomId.value)
+                }
                 is RoomListEvent.MarkAsRead -> coroutineScope.markAsRead(event.roomId)
                 is RoomListEvent.MarkAsUnread -> coroutineScope.markAsUnread(event.roomId)
                 is RoomListEvent.AcceptInvite -> {
@@ -161,10 +179,16 @@ class RoomListPresenter(
             }
         }
 
-        LaunchedEffect(filtersState.filterSelectionStates, spaceFiltersState.selectedFilter()) {
+        LaunchedEffect(
+            filtersState.filterSelectionStates,
+            filtersState.activeCustomTagIds,
+            filtersState.customTags,
+        ) {
             val selectedFilters = filtersState.selectedFilters().map { filter -> filter.into() }
-            val selectedSpaceFilter = spaceFiltersState.selectedFilter().into()
-            val allFilters = RoomListFilter.All(selectedFilters + listOfNotNull(selectedSpaceFilter))
+            val customTagFilter = filtersState.selectedCustomTags().takeIf { it.isNotEmpty() }?.let { tags ->
+                RoomListFilter.Identifiers(tags.flatMap { it.roomIds }.distinct().map(::RoomId))
+            }
+            val allFilters = RoomListFilter.All(selectedFilters + listOfNotNull(customTagFilter))
             roomListDataSource.updateFilter(allFilters)
         }
 
@@ -242,6 +266,14 @@ class RoomListPresenter(
             roomListDataSource.roomSummariesFlow.collect { value = AsyncData.Success(it) }
         }
         val loadingState by roomListDataSource.loadingState.collectAsState()
+        // A single session-scoped event stream supplies all DM presence states.
+        val visibleRange by roomListDataSource.visibleRange.collectAsState()
+        val presenceIds = roomSummaries.dataOrNull().orEmpty().filterIndexed { index, summary -> index in visibleRange && summary.isDm }
+            .mapNotNull { it.dmUserId }
+            .map(::UserId)
+            .toSet()
+        val presenceStates = client.observePresence(presenceIds.toImmutableSet())
+
         val showEmpty by remember {
             derivedStateOf {
                 (loadingState as? RoomList.LoadingState.Loaded)?.numberOfRooms == 0
@@ -268,7 +300,9 @@ class RoomListPresenter(
                     showUnreadCount = showUnreadCount,
                     fullScreenIntentPermissionsState = fullScreenIntentPermissionsPresenter.present(),
                     batteryOptimizationState = batteryOptimizationPresenter.present(),
-                    summaries = roomSummaries.dataOrNull().orEmpty().toImmutableList(),
+                    summaries = roomSummaries.dataOrNull().orEmpty().map { summary ->
+                        summary.copy(presence = presenceStates[summary.dmUserId?.let(::UserId)] ?: UserPresence.Unknown)
+                    }.toImmutableList(),
                     showAllActivity = showAllActivity,
                     seenRoomInvites = seenRoomInvites.toImmutableSet(),
                 )
