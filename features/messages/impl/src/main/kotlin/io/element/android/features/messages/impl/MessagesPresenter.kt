@@ -314,8 +314,6 @@ class MessagesPresenter(
         }
 
         return MessagesState(
-            dmPresence = io.element.android.libraries.matrix.api.user.UserPresence.Unknown,
-            onlineMemberCount = null,
             roomId = room.roomId,
             roomName = roomInfo.name,
             roomAvatar = roomAvatar,

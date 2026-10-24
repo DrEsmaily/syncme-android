@@ -68,21 +68,15 @@ open class MessagesStatePreviewParam : PreviewParameterProvider<MessagesState> {
             aMessagesState(showReinvitePrompt = true),
             aMessagesState(composerState = aMessageComposerState(showTextFormatting = true)),
             aMessagesState(
-            dmPresence = io.element.android.libraries.matrix.api.user.UserPresence.Unknown,
-            onlineMemberCount = null,
                 voiceMessageComposerState = aVoiceMessageComposerState(showPermissionRationaleDialog = true),
             ),
             aMessagesState(
-            dmPresence = io.element.android.libraries.matrix.api.user.UserPresence.Unknown,
-            onlineMemberCount = null,
                 voiceMessageComposerState = aVoiceMessageComposerState(
                     voiceMessageState = aVoiceMessagePreviewState(),
                     showSendFailureDialog = true
                 ),
             ),
             aMessagesState(
-            dmPresence = io.element.android.libraries.matrix.api.user.UserPresence.Unknown,
-            onlineMemberCount = null,
                 pinnedMessagesBannerState = aLoadedPinnedMessagesBannerState(
                     knownPinnedMessagesCount = 4,
                     currentPinnedMessageIndex = 0,
@@ -91,16 +85,12 @@ open class MessagesStatePreviewParam : PreviewParameterProvider<MessagesState> {
             aMessagesState(isCurrentlySharingLiveLocationInRoom = true),
             aMessagesState(successorRoom = SuccessorRoom(RoomId("!id:domain"), null)),
             aMessagesState(
-            dmPresence = io.element.android.libraries.matrix.api.user.UserPresence.Unknown,
-            onlineMemberCount = null,
                 timelineState = aTimelineState(
                     timelineMode = Timeline.Mode.Thread(threadRootId = ThreadId("\$a-thread-id")),
                     timelineItems = aTimelineItemList(aTimelineItemTextContent()),
                 )
             ),
             aMessagesState(
-            dmPresence = io.element.android.libraries.matrix.api.user.UserPresence.Unknown,
-            onlineMemberCount = null,
                 composerState = aMessageComposerState(textEditorState = aTextEditorStateMarkdown()),
                 identityChangeState = anIdentityChangeState(listOf(aRoomMemberIdentityStateChange()))
             ),
@@ -109,8 +99,6 @@ open class MessagesStatePreviewParam : PreviewParameterProvider<MessagesState> {
 }
 
 fun aMessagesState(
-            dmPresence = io.element.android.libraries.matrix.api.user.UserPresence.Unknown,
-            onlineMemberCount = null,
     roomName: String? = ROOM_NAME,
     roomAvatar: AvatarData = AvatarData("!id:domain", ROOM_NAME, size = AvatarSize.TimelineRoom),
     userEventPermissions: UserEventPermissions = aUserEventPermissions(),
@@ -148,8 +136,6 @@ fun aMessagesState(
     eventSink: (MessagesEvent) -> Unit = {},
     redactEventAction: AsyncAction<Unit> = AsyncAction.Uninitialized,
 ) = MessagesState(
-            dmPresence = io.element.android.libraries.matrix.api.user.UserPresence.Unknown,
-            onlineMemberCount = null,
     roomId = RoomId("!id:domain"),
     roomName = roomName,
     roomAvatar = roomAvatar,
