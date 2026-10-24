@@ -36,6 +36,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.movableContentOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -44,6 +45,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.platform.ViewConfiguration
@@ -59,6 +62,7 @@ import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
@@ -80,6 +84,7 @@ import io.element.android.features.messages.impl.timeline.model.TimelineItemReac
 import io.element.android.features.messages.impl.timeline.model.TimelineItemThreadInfo
 import io.element.android.features.messages.impl.timeline.model.bubble.BubbleState
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemAttachmentsContent
+import io.element.android.features.messages.impl.timeline.model.event.TimelineItemEventContentWithAttachment
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemGalleryContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemImageContent
 import io.element.android.features.messages.impl.timeline.model.event.TimelineItemLocationContent
@@ -179,6 +184,7 @@ fun TimelineItemEventRow(
     onReadReceiptClick: (event: TimelineItem.Event) -> Unit,
     onSwipeToReply: () -> Unit,
     eventSink: (TimelineEvent.TimelineItemEvent) -> Unit,
+    mediaUploadProgress: Float? = null,
     modifier: Modifier = Modifier,
     eventContentView: @Composable (Modifier, (ContentAvoidingLayoutData) -> Unit) -> Unit = { contentModifier, onContentLayoutChange ->
         // Only pass down a custom clickable lambda if the content can be clicked separately
@@ -201,6 +207,45 @@ fun TimelineItemEventRow(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val interactionSource = remember { MutableInteractionSource() }
+    val bubbleWidthPx = remember { mutableIntStateOf(0) }
+    val naturalBubbleWidthPx = remember(event.id) { mutableIntStateOf(0) }
+    val availableRowWidthPx = remember { mutableIntStateOf(0) }
+    // Size the upload bubble to the actual one-line status text, never a fixed 300dp.
+    // Only small attachments are expanded; large media keeps its natural width.
+    val progressTextMeasurer = androidx.compose.ui.text.rememberTextMeasurer()
+    val uploadBubbleMinWidth = mediaUploadProgress?.let { fraction ->
+        val contentSize = (event.content as? TimelineItemEventContentWithAttachment)?.fileSize?.takeIf { it > 0L }
+        val sent = contentSize?.let { (it.toDouble() * fraction.toDouble()).toLong().coerceIn(0L, it) }
+        val status = if (contentSize != null && sent != null) {
+            stringResource(
+                CommonStrings.screen_media_upload_progress_bytes,
+                (fraction * 100f).roundToInt(),
+                formatUploadBytes(sent),
+                formatUploadBytes(contentSize)
+            )
+        } else {
+            stringResource(CommonStrings.screen_media_upload_progress, (fraction * 100f).roundToInt())
+        }
+        // Reserve enough width for the longest final percentage/byte count so the
+        // media does not visibly change width throughout one upload.
+        val widestStatus = if (contentSize != null) {
+            stringResource(CommonStrings.screen_media_upload_progress_bytes, 100, formatUploadBytes(contentSize), formatUploadBytes(contentSize))
+        } else {
+            status
+        }
+        val measuredWidth = progressTextMeasurer.measure(
+            text = widestStatus,
+            style = ElementTheme.typography.fontBodySmMedium,
+            maxLines = 1,
+            softWrap = false,
+        ).size.width
+        with(LocalDensity.current) {
+            // Actual measured timeline space, not global display size; this also
+            // handles landscape, tablets, multi-window and font scaling.
+            val availableWidth = availableRowWidthPx.intValue.toDp() - 32.dp
+            minOf(measuredWidth.toDp() + 8.dp, availableWidth.coerceAtLeast(1.dp))
+        }
+    }
 
     val onContentClick = if (event.mustBeProtected()) {
         // In this case, let the content handle the click
@@ -229,6 +274,7 @@ fun TimelineItemEventRow(
     Column(
         modifier = modifier
             .fillMaxWidth()
+            .onSizeChanged { availableRowWidthPx.intValue = it.width }
             .semantics { customActions = accessibilityActions }
     ) {
         if (event.groupPosition.isNew()) {
@@ -275,6 +321,12 @@ fun TimelineItemEventRow(
                                 state = state.draggableState,
                             ),
                         eventSink = eventSink,
+                        onBubbleWidthChanged = {
+                            bubbleWidthPx.intValue = it
+                            if (naturalBubbleWidthPx.intValue == 0) naturalBubbleWidthPx.intValue = it
+                        },
+                        bubbleWidthPx = naturalBubbleWidthPx.intValue,
+                        uploadBubbleMinWidth = uploadBubbleMinWidth,
                         eventContentView = eventContentView,
                     )
                 }
@@ -294,6 +346,12 @@ fun TimelineItemEventRow(
                 onReactionLongClick = { emoji -> onReactionLongClick(emoji, event) },
                 onMoreReactionsClick = { onMoreReactionsClick(event) },
                 eventSink = eventSink,
+                onBubbleWidthChanged = {
+                            bubbleWidthPx.intValue = it
+                            if (naturalBubbleWidthPx.intValue == 0) naturalBubbleWidthPx.intValue = it
+                        },
+                        bubbleWidthPx = naturalBubbleWidthPx.intValue,
+                uploadBubbleMinWidth = uploadBubbleMinWidth,
                 eventContentView = eventContentView,
             )
         }
@@ -317,6 +375,70 @@ fun TimelineItemEventRow(
                 }
             )
         }
+
+        mediaUploadProgress
+            ?.takeIf { it.isFinite() }
+            ?.coerceIn(0f, 1f)
+            ?.let { fraction ->
+                val percent = (fraction * 100f).roundToInt().coerceIn(0, 100)
+                val totalBytes = (event.content as? TimelineItemEventContentWithAttachment)
+                    ?.fileSize
+                    ?.takeIf { it > 0L }
+                val uploadedBytes = totalBytes?.let {
+                    (it.toDouble() * fraction.toDouble()).toLong().coerceIn(0L, it)
+                }
+                val bubbleWidth = with(LocalDensity.current) { bubbleWidthPx.intValue.toDp() }
+                val edgePadding = if (event.isMine) {
+                    Modifier.padding(end = 16.dp, top = 4.dp)
+                } else {
+                    val startMargin = if (timelineRoomInfo.isDm) 16.dp else 16.dp + BUBBLE_INCOMING_OFFSET
+                    Modifier.padding(start = startMargin, top = 4.dp)
+                }
+                Column(
+                    modifier = Modifier
+                        .align(if (event.isMine) Alignment.End else Alignment.Start)
+                        .then(edgePadding)
+                        .then(
+                            if (bubbleWidthPx.intValue > 0) {
+                                Modifier.width(bubbleWidth)
+                            } else {
+                                Modifier.fillMaxWidth(MessageEventBubbleDefaults.BUBBLE_WIDTH_RATIO)
+                            }
+                        ),
+                ) {
+                    Text(
+                        text = if (totalBytes != null && uploadedBytes != null) {
+                            stringResource(
+                                CommonStrings.screen_media_upload_progress_bytes,
+                                percent,
+                                formatUploadBytes(uploadedBytes),
+                                formatUploadBytes(totalBytes)
+                            )
+                        } else {
+                            stringResource(CommonStrings.screen_media_upload_progress, percent)
+                        },
+                        style = ElementTheme.typography.fontBodySmMedium,
+                        color = ElementTheme.colors.textSecondary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Box(
+                        modifier = Modifier
+                            .padding(top = 3.dp)
+                            .fillMaxWidth()
+                            .height(3.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(ElementTheme.colors.bgSubtleSecondary),
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(fraction)
+                                .height(3.dp)
+                                .background(ElementTheme.colors.textPrimary),
+                        )
+                    }
+                }
+            }
 
         // Read receipts / Send state
         TimelineItemReadReceiptView(
@@ -478,6 +600,9 @@ private fun TimelineItemEventRowContent(
     onReactionLongClick: (emoji: String) -> Unit,
     onMoreReactionsClick: (event: TimelineItem.Event) -> Unit,
     eventSink: (TimelineEvent.TimelineItemEvent) -> Unit,
+    onBubbleWidthChanged: (Int) -> Unit,
+    bubbleWidthPx: Int,
+    uploadBubbleMinWidth: Dp?,
     modifier: Modifier = Modifier,
     eventContentView: @Composable (Modifier, (ContentAvoidingLayoutData) -> Unit) -> Unit,
 ) {
@@ -495,7 +620,6 @@ private fun TimelineItemEventRowContent(
         val (
             sender,
             message,
-            reactions,
             pinIcon,
         ) = createRefs()
 
@@ -542,6 +666,18 @@ private fun TimelineItemEventRowContent(
         )
         MessageEventBubble(
             modifier = Modifier
+                // Measure the media at its natural size first. Expand only a genuinely
+                // narrow bubble, rather than giving every uploading video a wide constraint.
+                .then(
+                    if (uploadBubbleMinWidth != null && bubbleWidthPx > 0 &&
+                        with(LocalDensity.current) { bubbleWidthPx.toDp() } < uploadBubbleMinWidth
+                    ) {
+                        Modifier.widthIn(min = uploadBubbleMinWidth)
+                    } else {
+                        Modifier
+                    }
+                )
+                .onSizeChanged { onBubbleWidthChanged(it.width) }
                 .constrainAs(message) {
                     val topMargin = if (bubbleState.cutTopStart) {
                         NEGATIVE_MARGIN_FOR_BUBBLE
@@ -562,6 +698,8 @@ private fun TimelineItemEventRowContent(
             onLongClick = onLongClick,
             customBackgroundColor = dangerousContentBubbleColor,
             borderColor = borderColor,
+            // Keep native media sizing; never force full-width while uploading.
+            allowFullContentWidth = false,
         ) {
             MessageEventBubbleContent(
                 event = event,
@@ -570,6 +708,21 @@ private fun TimelineItemEventRowContent(
                 onMessageLongClick = onLongClick,
                 inReplyToClick = inReplyToClick,
                 eventSink = eventSink,
+                reactionContent = if (event.reactionsState.reactions.isNotEmpty()) {
+                    {
+                        TimelineItemReactionsView(
+                            reactionsState = event.reactionsState,
+                            userCanSendReaction = timelineRoomInfo.userHasPermissionToSendReaction,
+                            isOutgoing = event.isMine,
+                            onReactionClick = onReactionClick,
+                            onReactionLongClick = onReactionLongClick,
+                            onMoreReactionsClick = { onMoreReactionsClick(event) },
+                            modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 4.dp),
+                        )
+                    }
+                } else {
+                    null
+                },
                 eventContentView = eventContentView,
             )
         }
@@ -592,34 +745,6 @@ private fun TimelineItemEventRowContent(
                             start.linkTo(message.end, margin = 8.dp)
                         }
                     }
-            )
-        }
-
-        // Reactions
-        if (event.reactionsState.reactions.isNotEmpty()) {
-            TimelineItemReactionsView(
-                reactionsState = event.reactionsState,
-                userCanSendReaction = timelineRoomInfo.userHasPermissionToSendReaction,
-                isOutgoing = event.isMine,
-                onReactionClick = onReactionClick,
-                onReactionLongClick = onReactionLongClick,
-                onMoreReactionsClick = { onMoreReactionsClick(event) },
-                modifier = Modifier
-                    .constrainAs(reactions) {
-                        top.linkTo(message.bottom, margin = (-4).dp)
-                        linkStartOrEnd(event)
-                    }
-                    .zIndex(1f)
-                    .padding(
-                        // Note: due to the applied constraints, start is left for other's message and right for mine
-                        // In design we want a offset of 6.dp compare to the bubble, so start is 22.dp (16 + 6)
-                        start = when {
-                            event.isMine -> 22.dp
-                            timelineRoomInfo.isDm -> 22.dp
-                            else -> 22.dp + BUBBLE_INCOMING_OFFSET
-                        },
-                        end = 16.dp
-                    )
             )
         }
     }
@@ -672,12 +797,15 @@ private fun MessageEventBubbleContent(
     onMessageLongClick: () -> Unit,
     inReplyToClick: () -> Unit,
     eventSink: (TimelineEvent.TimelineItemEvent) -> Unit,
+    reactionContent: (@Composable () -> Unit)? = null,
     @SuppressLint("ModifierParameter")
     // need to rename this modifier to prevent linter false positives
     @Suppress("ModifierNaming")
     bubbleModifier: Modifier = Modifier,
     eventContentView: @Composable (Modifier, (ContentAvoidingLayoutData) -> Unit) -> Unit,
 ) {
+    val baseLayoutDirection = LocalLayoutDirection.current
+
     // Long clicks are not not automatically propagated from a `clickable`
     // to its `combinedClickable` parent so we do it manually
     fun onTimestampLongClick() = onMessageLongClick()
@@ -716,6 +844,18 @@ private fun MessageEventBubbleContent(
     ) {
         @Suppress("NAME_SHADOWING")
         val content = remember { movableContentOf(content) }
+        val originalLayoutDirection = LocalLayoutDirection.current
+        val contentDirection = if (event.content is TimelineItemTextContent) {
+            remember(event.content.body) {
+                when (TextDirection.detect(event.content.body)) {
+                    TextDirection.Ltr, TextDirection.ContentOrLtr -> LayoutDirection.Ltr
+                    TextDirection.Rtl, TextDirection.ContentOrRtl -> LayoutDirection.Rtl
+                    else -> originalLayoutDirection
+                }
+            }
+        } else {
+            originalLayoutDirection
+        }
         when (timestampPosition) {
             TimestampPosition.Overlay ->
                 Box(modifier, contentAlignment = Alignment.Center) {
@@ -733,20 +873,6 @@ private fun MessageEventBubbleContent(
                     )
                 }
             TimestampPosition.Aligned -> @Composable {
-                val originalLayoutDirection = LocalLayoutDirection.current
-                // Detect if the direction of the text content (if any) does not match the layout direction, to place the content and timestamp correctly
-                val contentDirection = if (event.content is TimelineItemTextContent) {
-                    remember(event.content.body) {
-                        when (TextDirection.detect(event.content.body)) {
-                            TextDirection.Ltr, TextDirection.ContentOrLtr -> LayoutDirection.Ltr
-                            TextDirection.Rtl, TextDirection.ContentOrRtl -> LayoutDirection.Rtl
-                            else -> originalLayoutDirection
-                        }
-                    }
-                } else {
-                    originalLayoutDirection
-                }
-
                 CompositionLocalProvider(LocalLayoutDirection provides contentDirection) {
                     ContentAvoidingLayout(
                         modifier = modifier,
@@ -772,14 +898,18 @@ private fun MessageEventBubbleContent(
             }
             TimestampPosition.Below ->
                 Column(modifier) {
-                    content {}
-                    TimelineEventTimestampView(
-                        event = event,
-                        eventSink = eventSink,
-                        modifier = Modifier
-                            .align(Alignment.End)
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
+                    CompositionLocalProvider(LocalLayoutDirection provides contentDirection) {
+                        content {}
+                    }
+                    CompositionLocalProvider(LocalLayoutDirection provides originalLayoutDirection) {
+                        TimelineEventTimestampView(
+                            event = event,
+                            eventSink = eventSink,
+                            modifier = Modifier
+                                .align(Alignment.End)
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
                 }
             TimestampPosition.Hidden -> Box(modifier) { content {} }
         }
@@ -833,7 +963,32 @@ private fun MessageEventBubbleContent(
                     traversalIndex = -1f
                 },
                 content = { onContentLayoutChange ->
-                    eventContentView(contentModifier, onContentLayoutChange)
+                    if (reactionContent == null) {
+                        // Keep the original lightweight layout for the common case.
+                        eventContentView(contentModifier, onContentLayoutChange)
+                    } else {
+                        val reactionAlignment = remember(event.content, event.isMine) {
+                            when (val textContent = event.content) {
+                                is TimelineItemTextContent -> when (TextDirection.detect(textContent.body)) {
+                                    TextDirection.Rtl, TextDirection.ContentOrRtl -> Alignment.End
+                                    else -> Alignment.Start
+                                }
+                                else -> if (event.isMine) Alignment.End else Alignment.Start
+                            }
+                        }
+                        Column {
+                            eventContentView(contentModifier, onContentLayoutChange)
+                            CompositionLocalProvider(LocalLayoutDirection provides baseLayoutDirection) {
+                                Box(
+                                    modifier = Modifier.align(reactionAlignment),
+                                ) {
+                                    // TimelineItemReactionsLayout measures to its actual row width
+                                    // and wraps only when the bubble's max width is reached.
+                                    reactionContent.invoke()
+                                }
+                            }
+                        }
+                    }
                 }
             )
         }
@@ -899,15 +1054,18 @@ private fun MessageEventBubbleContent(
             event.content !is TimelineItemAttachmentsContent &&
             contentValidationState.hasError()
 
-    val timestampPosition = if (needsInvalidContentLayout) {
+    val timestampPosition = if (reactionContent != null) {
+        // Keep reactions inside the bubble, below message/caption and above the timestamp.
+        TimestampPosition.Below
+    } else if (needsInvalidContentLayout) {
         // The invalid content view will be displayed in all these cases, independent of the event content
         TimestampPosition.Aligned
     } else {
         when (val content = event.content) {
-            is TimelineItemImageContent -> if (content.showCaption) TimestampPosition.Aligned else TimestampPosition.Overlay
-            is TimelineItemVideoContent -> if (content.showCaption) TimestampPosition.Aligned else TimestampPosition.Overlay
-            is TimelineItemGalleryContent -> if (content.showCaption) TimestampPosition.Aligned else TimestampPosition.Below
-            is TimelineItemAttachmentsContent -> if (content.showCaption) TimestampPosition.Aligned else TimestampPosition.Below
+            is TimelineItemImageContent -> if (content.showCaption) TimestampPosition.Below else TimestampPosition.Overlay
+            is TimelineItemVideoContent -> if (content.showCaption) TimestampPosition.Below else TimestampPosition.Overlay
+            is TimelineItemGalleryContent -> TimestampPosition.Below
+            is TimelineItemAttachmentsContent -> TimestampPosition.Below
             is TimelineItemStickerContent -> TimestampPosition.Overlay
             is TimelineItemLocationContent -> {
                 val content = content.ensureActiveLiveLocation()
@@ -942,6 +1100,15 @@ private fun MessageEventBubbleContent(
         canShrinkContent = event.content is TimelineItemVoiceContent,
         modifier = bubbleModifier,
     )
+}
+
+private fun formatUploadBytes(bytes: Long): String {
+    if (bytes < 1024L) return "$bytes B"
+    val kb = bytes / 1024.0
+    if (kb < 1024.0) return String.format(java.util.Locale.getDefault(), "%.1f KB", kb)
+    val mb = kb / 1024.0
+    if (mb < 1024.0) return String.format(java.util.Locale.getDefault(), "%.1f MB", mb)
+    return String.format(java.util.Locale.getDefault(), "%.2f GB", mb / 1024.0)
 }
 
 @PreviewsDayNight

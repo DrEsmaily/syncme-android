@@ -21,4 +21,6 @@
         <item quantity="one">At least %1$d online</item>
         <item quantity="other">At least %1$d online</item>
     </plurals>
+    <string name="screen_media_upload_progress">Uploading %1$d%%</string>
+    <string name="screen_media_upload_progress_bytes">Uploading %1$d%% · %2$s / %3$s</string>
 </resources>

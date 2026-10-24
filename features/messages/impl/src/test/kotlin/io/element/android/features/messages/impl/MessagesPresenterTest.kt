@@ -1540,7 +1540,9 @@ class MessagesPresenterTest {
         markAsFullyRead: MarkAsFullyRead = FakeMarkAsFullyRead(),
         liveLocationShareManager: FakeActiveLiveLocationShareManager = FakeActiveLiveLocationShareManager(),
     ): MessagesPresenter {
+        joinedRoom.baseRoom.givenUpdateMembersResult { }
         return MessagesPresenter(
+            matrixClient = io.element.android.libraries.matrix.test.FakeMatrixClient(),
             navigator = navigator,
             room = joinedRoom,
             composerPresenter = messageComposerPresenter,
